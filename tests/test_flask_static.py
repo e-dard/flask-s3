@@ -27,7 +27,8 @@ class FlaskStaticTest(unittest.TestCase):
     def test_config(self):
         """ Tests configuration vars exist. """
         FlaskS3(self.app)
-        defaults = ('S3_USE_HTTPS', 'USE_S3', 'S3_DEBUG_FORCE')
+        defaults = ('S3_USE_HTTPS', 'USE_S3', 'USE_S3_DEBUG', 
+                    'S3_BUCKET_DOMAIN')
         for default in defaults:
             self.assertIn(default, self.app.config)
 
@@ -37,7 +38,10 @@ class UrlTests(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
         self.app.testing = True
-        
+        self.app.config['S3_BUCKET_NAME'] = 'foo'
+        self.app.config['S3_USE_HTTPS'] = True
+        self.app.config['S3_BUCKET_DOMAIN'] = 's3.amazonaws.com'
+
         @self.app.route('/<url_for_string>')
         def a(url_for_string):
             return render_template_string(url_for_string)
@@ -61,6 +65,9 @@ class UrlTests(unittest.TestCase):
     def test_required_config(self):
         """ Tests that ValueError raised if bucket address not provided."""
         raises = False
+        
+        del self.app.config['S3_BUCKET_NAME']
+
         try:
             ufs = "{{url_for('static', filename='bah.js')}}"
             self.client_get(ufs)
@@ -70,23 +77,18 @@ class UrlTests(unittest.TestCase):
 
     def test_url_for(self):
         """Tests that correct url formed for static asset in self.app."""
-        self.app.config['S3_BUCKET'] = 'foo.com'
-
         # non static endpoint url_for in template 
         self.assertEquals(self.client_get('').data, '/')
-
         # static endpoint url_for in template
         ufs = "{{url_for('static', filename='bah.js')}}"
-        exp = 'http://foo.com/static/bah.js'
+        exp = 'https://foo.s3.amazonaws.com/static/bah.js'
         self.assertEquals(self.client_get(ufs).data, exp)
 
     def test_url_for_blueprint(self):
         """Tests that correct url formed for static asset in blueprint."""
-        self.app.config['S3_BUCKET'] = 'foo.com'
-
         # static endpoint url_for in template
         ufs = "{{url_for('admin.static', filename='bah.js')}}"
-        exp = 'http://foo.com/admin-static/bah.js'
+        exp = 'https://foo.s3.amazonaws.com/admin-static/bah.js'
         self.assertEquals(self.client_get(ufs).data, exp)
 
 
@@ -96,13 +98,13 @@ class S3Tests(unittest.TestCase):
     def setUp(self):
         self.app = Mock(spec=Flask)
 
+
     def test__bp_static_url(self):
         """ Tests test__bp_static_url """
         bps = [Mock(static_url_path='/foo', url_prefix=None), 
                Mock(static_url_path='/b/bar', url_prefix='/pref')]
         expected = [u'/foo', u'/pref/b/bar']
         self.assertEquals(expected, [flask_s3._bp_static_url(x) for x in bps])
-
 
 
     @patch('os.walk')
@@ -182,11 +184,12 @@ class S3Tests(unittest.TestCase):
         static_folder = '/home/z'
         assets = ['/home/z/bar.css', '/home/z/foo.css'] 
         exclude = ['/foo/static/foo.css', '/foo/static/foo/bar.css']
-        expected = [call(bucket=None, name='/foo/static/bar.css'), 
+        # we expect foo.css to be excluded and not uploaded
+        expected = [call(bucket=None, name=u'/foo/static/bar.css'), 
                     call().set_contents_from_filename('/home/z/bar.css')]
         flask_s3._write_files(static_url_loc, static_folder, assets, None, 
                               exclude)
-        self.assertEquals(expected, key_mock.mock_calls)
+        self.assertLessEqual(expected, key_mock.mock_calls)
 
     def test_static_folder_path(self):
         """ Tests _static_folder_path """
@@ -197,10 +200,6 @@ class S3Tests(unittest.TestCase):
                     u'/bar/s/a/b.css']
         for i, e in zip(inputs, expected):
             self.assertEquals(e, flask_s3._static_folder_path(*i))
-
-    def test__upload_files(self):
-        """ Tests _upload_files """
-        assert True
 
 if __name__ == '__main__':
     unittest.main()
