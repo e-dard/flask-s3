@@ -84,6 +84,17 @@ class UrlTests(unittest.TestCase):
         exp = 'https://foo.s3.amazonaws.com/static/bah.js'
         self.assertEquals(self.client_get(ufs).data, exp)
 
+    def test_url_for_debug(self):
+        """Tests Flask-S3 behaviour in debug mode."""
+        self.app.debug = True
+        # static endpoint url_for in template
+        ufs = "{{url_for('static', filename='bah.js')}}"
+        exp = '/static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, exp)
+        self.app.config['USE_S3_DEBUG'] = True
+        exp = 'https://foo.s3.amazonaws.com/static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, exp)
+
     def test_url_for_blueprint(self):
         """Tests that correct url formed for static asset in blueprint."""
         # static endpoint url_for in template
