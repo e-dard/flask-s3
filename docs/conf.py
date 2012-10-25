@@ -16,7 +16,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -25,7 +25,7 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = []
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'flask-s3'
+project = u'flask-S3'
 copyright = u'2012, Edward Robinson'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -67,6 +67,8 @@ release = '0.1'
 exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
+default_role = 'obj' 
+# affects stuff wrapped like `this`
 #default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
@@ -81,7 +83,7 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+#pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -228,7 +230,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'flask-s3', u'flask-s3 Documentation',
-   u'Edward Robinson', 'flask-s3', 'One line description of project.',
+   u'Edward Robinson', 'flask-s3', 'Flask-S3 allows you to server your static assets from Amazon S3.',
    'Miscellaneous'),
 ]
 
@@ -244,3 +246,12 @@ texinfo_documents = [
 sys.path.append(os.path.abspath('_themes'))
 html_theme_path = ['_themes']
 html_theme = 'flask_small'
+html_theme_options = dict(github_fork='e-dard/flask-s3', 
+                          index_logo=False)
+
+
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {'http://docs.python.org/': None,
+                       'http://flask.pocoo.org/docs/': None}
+
+
