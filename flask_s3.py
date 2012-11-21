@@ -42,14 +42,15 @@ def url_for(endpoint, **values):
 
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
-    return u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path)
+    return u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
 
 def _gather_files(app, hidden):
     """ Gets all files in static folders and returns in dict."""
     dirs = [(unicode(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
+        blueprints = app.blueprints.values()
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
-        dirs.extend([bp_details(x) for x in app.blueprints.values()])
+        dirs.extend([bp_details(x) for x in blueprints if x.static_folder])
         
     valid_files = defaultdict(list)
     for static_folder, static_url_loc  in dirs:

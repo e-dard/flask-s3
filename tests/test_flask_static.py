@@ -109,14 +109,14 @@ class S3Tests(unittest.TestCase):
     def setUp(self):
         self.app = Mock(spec=Flask)
 
-
     def test__bp_static_url(self):
         """ Tests test__bp_static_url """
         bps = [Mock(static_url_path='/foo', url_prefix=None), 
-               Mock(static_url_path='/b/bar', url_prefix='/pref')]
-        expected = [u'/foo', u'/pref/b/bar']
+               Mock(static_url_path=None, url_prefix='/pref'),
+               Mock(static_url_path='/b/bar', url_prefix='/pref'),
+               Mock(static_url_path=None, url_prefix=None)]
+        expected = [u'/foo', u'/pref', u'/pref/b/bar', u'']
         self.assertEquals(expected, [flask_s3._bp_static_url(x) for x in bps])
-
 
     @patch('os.walk')
     @patch('os.path.isdir')
@@ -129,7 +129,9 @@ class S3Tests(unittest.TestCase):
                     url_prefix=None)
         bp_b = Mock(static_folder='/home/zoo', static_url_path='/b/bar', 
                     url_prefix=None)
-        self.app.blueprints = { 'a': bp_a, 'b': bp_b}
+        bp_c = Mock(static_folder=None)
+
+        self.app.blueprints = { 'a': bp_a, 'b': bp_b, 'c': bp_c}
         dirs = { '/home': [('/home', None, ['.a'])],
                  '/home/bar': [('/home/bar', None, ['b'])],
                  '/home/zoo': [('/home/zoo', None, ['c']), 
