@@ -54,6 +54,11 @@ def _gather_files(app, hidden):
         
     valid_files = defaultdict(list)
     for static_folder, static_url_loc  in dirs:
+
+        # Fix for issue #2 (see: https://github.com/e-dard/flask-s3/issues/2).
+        if not (static_folder and static_url_loc):
+            continue
+
         if not os.path.isdir(static_folder):
             logger.warning("WARNING - [%s does not exist]" % static_folder)
         else:
