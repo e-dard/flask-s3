@@ -9,11 +9,11 @@ from setuptools import setup
 
 setup(
     name='Flask-S3',
-    version='0.1.3',
+    version='0.1.4',
     url='http://github.com/e-dard/flask-s3',
     license='WTFPL',
     author='Edward Robinson',
-    author_email='me@eddrobinson.net',
+    author_email='hi@edd.io',
     description='Seamlessly serve the static files of your Flask app from Amazon S3',
     long_description=__doc__,
     py_modules=['flask_s3'],

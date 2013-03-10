@@ -18,10 +18,11 @@ def url_for(endpoint, **values):
     generated, otherwise the call is passed on to `flask.url_for`.
 
     Because this function is set as a jinja environment variable when 
-    `FlaskS3.init_app` is invoked, this function replaces `flask.url_for` in 
-    templates automatically. It is unlikely that this function will 
-    need to be directly called from within your application code, unless you 
-    need to refer to static assets outside of your templates.
+    `FlaskS3.init_app` is invoked, this function replaces 
+    `flask.url_for` in templates automatically. It is unlikely that this
+    function will need to be directly called from within your 
+    application code, unless you need to refer to static assets outside 
+    of your templates.
     """
     app = current_app
     if 'S3_BUCKET_NAME' not in app.config:
@@ -42,7 +43,8 @@ def url_for(endpoint, **values):
 
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
-    return u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
+    u = u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
+    return u
 
 def _gather_files(app, hidden):
     """ Gets all files in static folders and returns in dict."""
@@ -76,8 +78,9 @@ def _static_folder_path(static_url, static_folder, static_asset):
 
     Returns a path relative to static_url for static_asset
     """
-    # first get the asset path relative to the static folder. static_asset is
-    # not simply a filename because it could be sub-directory then file etc.
+    # first get the asset path relative to the static folder. 
+    # static_asset is not simply a filename because it could be 
+    # sub-directory then file etc.
     if not static_asset.startswith(static_folder):
         raise ValueError("%s startic asset must be under %s static folder" %
                          (static_asset, static_folder))
@@ -90,8 +93,10 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
     """ Writes all the files inside a static folder to S3. """
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
-        key_name = _static_folder_path(static_url_loc, static_folder, asset_loc)
-        logger.debug("Uploading %s to %s as %s" % (file_path, bucket, key_name))
+        key_name = _static_folder_path(static_url_loc, static_folder, 
+                                       asset_loc)
+        msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
+        logger.debug(msg)
         if ex_keys and key_name in ex_keys:
             logger.debug("%s excluded from upload" % key_name)
         else:
@@ -109,38 +114,53 @@ def _upload_files(app, files_, bucket):
 def create_all(app, user=None, password=None, bucket_name=None, 
                location='', include_hidden=False):
     """
-    Uploads of the static assets associated with a Flask application to Amazon S3.
+    Uploads of the static assets associated with a Flask application to 
+    Amazon S3.
 
     All static assets are identified on the local filesystem, including 
-    any static assets associated with *registered* blueprints. In turn, each 
-    asset is uploaded to the bucket described by `bucket_name`. If the bucket 
-    does not exist then it is created.
+    any static assets associated with *registered* blueprints. In turn, 
+    each asset is uploaded to the bucket described by `bucket_name`. If 
+    the bucket does not exist then it is created.
 
-    Flask-S3 creates the same relative static asset folder structure on S3 as 
-    can be found within your Flask application.
+    Flask-S3 creates the same relative static asset folder structure on
+    S3 as can be found within your Flask application.
 
-    Many of the optional arguments to `create_all` can be specified instead in 
-    your application's configuration using the Flask-S3 `configuration`_ variables.
+    Many of the optional arguments to `create_all` can be specified
+    instead in your application's configuration using the Flask-S3
+    `configuration`_ variables.
 
     :param app: a :class:`flask.Flask` application object.
 
-    :param user: an AWS Access Key ID. You can find this key in the Security Credentials section of your AWS account. 
+    :param user: an AWS Access Key ID. You can find this key in the
+                 Security Credentials section of your AWS account.
     :type user: `basestring` or None
 
-    :param password: an AWS Secret Access Key. You can find this key in the Security Credentials section of your AWS account.
+    :param password: an AWS Secret Access Key. You can find this key in
+                     the Security Credentials section of your AWS 
+                     account.
     :type password: `basestring` or None
     
-    :param bucket_name: the name of the bucket you wish to server your static assets from. **Note**: while a valid character, it is recommended that you do not include periods in bucket_name if you wish to serve over HTTPS. See Amazon's `bucket restrictions`_ for more details.
+    :param bucket_name: the name of the bucket you wish to server your
+                        static assets from. **Note**: while a valid 
+                        character, it is recommended that you do not 
+                        include periods in bucket_name if you wish to 
+                        serve over HTTPS. See Amazon's `bucket
+                        restrictions`_ for more details.
     :type bucket_name: `basestring` or None
 
-    :param location: the AWS region to host the bucket in; an empty string indicates the default region should be used, which is the US Standard region. Possible location values include: `'DEFAULT'`, `'EU'`, `'USWest'`, `'APSoutheast'` 
+    :param location: the AWS region to host the bucket in; an empty
+                     string indicates the default region should be used,
+                     which is the US Standard region. Possible location 
+                     values include: `'DEFAULT'`, `'EU'`, `'USWest'`, 
+                     `'APSoutheast'`
     :type location: `basestring` or None
 
-    :param include_hidden: by default Flask-S3 will not upload hidden files. Set this to true to force the upload of hidden files.
+    :param include_hidden: by default Flask-S3 will not upload hidden
+        files. Set this to true to force the upload of hidden files.
     :type include_hidden: `bool`
 
-    .. _bucket restrictions: http://docs.amazonwebservices.com/AmazonS3/latest\
-    /dev/BucketRestrictions.html
+    .. _bucket restrictions: http://docs.amazonwebservices.com/AmazonS3\
+    /latest/dev/BucketRestrictions.html
 
     """
     if user is None and 'AWS_ACCESS_KEY_ID' in app.config:
@@ -169,8 +189,8 @@ class FlaskS3(object):
     The FlaskS3 object allows your application to use Flask-S3.
 
     When initialising a FlaskS3 object you may optionally provide your 
-    :class:`flask.Flask` application object if it is ready. Otherwise, you may
-    provide it later by using the :meth:`init_app` method.
+    :class:`flask.Flask` application object if it is ready. Otherwise, 
+    you may provide it later by using the :meth:`init_app` method.
 
     :param app: optional :class:`flask.Flask` application object
     :type app: :class:`flask.Flask` or None
@@ -181,9 +201,9 @@ class FlaskS3(object):
 
     def init_app(self, app):
         """
-        An alternative way to pass your :class:`flask.Flask` application object 
-        to Flask-S3. :meth:`init_app` also takes care of some default 
-        `settings`_.
+        An alternative way to pass your :class:`flask.Flask` application
+        object to Flask-S3. :meth:`init_app` also takes care of some 
+        default `settings`_.
 
         :param app: the :class:`flask.Flask` application object.
         """

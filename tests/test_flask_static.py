@@ -3,7 +3,6 @@ import ntpath
 
 from mock import Mock, patch, call
 from flask import Flask, render_template_string, Blueprint
-from boto.s3.key import Key
 
 import flask_s3
 from flask_s3 import FlaskS3
@@ -64,7 +63,9 @@ class UrlTests(unittest.TestCase):
         return client.get('/%s' % ufs)
 
     def test_required_config(self):
-        """ Tests that ValueError raised if bucket address not provided."""
+        """
+        Tests that ValueError raised if bucket address not provided.
+        """
         raises = False
         
         del self.app.config['S3_BUCKET_NAME']
@@ -77,7 +78,9 @@ class UrlTests(unittest.TestCase):
         self.assertTrue(raises)
 
     def test_url_for(self):
-        """Tests that correct url formed for static asset in self.app."""
+        """
+        Tests that correct url formed for static asset in self.app.
+        """
         # non static endpoint url_for in template 
         self.assertEquals(self.client_get('').data, '/')
         # static endpoint url_for in template
@@ -97,7 +100,9 @@ class UrlTests(unittest.TestCase):
         self.assertEquals(self.client_get(ufs).data, exp)
 
     def test_url_for_blueprint(self):
-        """Tests that correct url formed for static asset in blueprint."""
+        """
+        Tests that correct url formed for static asset in blueprint.
+        """
         # static endpoint url_for in template
         ufs = "{{url_for('admin.static', filename='bah.js')}}"
         exp = 'https://foo.s3.amazonaws.com/admin-static/bah.js'
@@ -159,8 +164,8 @@ class S3Tests(unittest.TestCase):
     @patch('os.path.isdir')
     def test__gather_files_no_blueprints_no_files(self, path_mock, os_mock):
         """
-        Tests that _gather_files works when there are no blueprints and no 
-        files available in the static folder
+        Tests that _gather_files works when there are no blueprints and
+        no files available in the static folder
         """
         self.app.static_folder = '/foo'
         dirs = {'/foo': [('/foo', None, [])]}

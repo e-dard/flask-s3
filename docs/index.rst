@@ -2,8 +2,9 @@ Flask-S3
 ********
 .. module:: flask_s3
 
-Flask-S3 allows you to easily serve all your `Flask`_ application's static
-assets from `Amazon S3`_, without having to modify your templates.
+Flask-S3 allows you to easily serve all your `Flask`_ application's
+static assets from `Amazon S3`_, without having to modify your
+templates.
 
 .. _Amazon S3: http://aws.amazon.com/s3
 .. _Flask: http://flask.pocoo.org/
@@ -14,24 +15,26 @@ How it works
 
 Flask-S3 has two main functions:
 
- 1. Walk through your application's static folders, gather all your static
-    assets together, and upload them to a bucket of your choice on S3;
+ 1. Walk through your application's static folders, gather all your
+    static assets together, and upload them to a bucket of your choice
+    on S3;
  
- 2. Replace the URLs that Flask's :func:`flask.url_for` function would insert
-    into your templates, with URLs that point to the static assets in your S3
-    bucket.
+ 2. Replace the URLs that Flask's :func:`flask.url_for` function would
+    insert into your templates, with URLs that point to the static
+    assets in your S3 bucket.
 
-The process of gathering and uploading your static assets to S3 need only be
-done once, and your application does not need to be running for it to work. The
-location of the S3 bucket can be inferred from Flask-S3 `settings`_ specified in
-your Flask application, therefore when your application is running there need
-not be any communication between the Flask application and Amazon S3.
+The process of gathering and uploading your static assets to S3 need
+only be done once, and your application does not need to be running for
+it to work. The location of the S3 bucket can be inferred from Flask-S3
+`settings`_ specified in your Flask application, therefore when your
+application is running there need not be any communication between the
+Flask application and Amazon S3.
 
-Internally, every time ``url_for`` is called in one of your application's
-templates, `flask_s3.url_for` is instead invoked. If the endpoint provided is
-deemed to refer to static assets, then the S3 URL for the asset specified in the
-`filename` argument is instead returned. Otherwise, `flask_s3.url_for` passes
-the call on to `flask.url_for`.
+Internally, every time ``url_for`` is called in one of your 
+application's templates, `flask_s3.url_for` is instead invoked. If the
+endpoint provided is deemed to refer to static assets, then the S3 URL
+for the asset specified in the `filename` argument is instead returned.
+Otherwise, `flask_s3.url_for` passes the call on to `flask.url_for`.
 
 
 Installation
@@ -52,9 +55,10 @@ You can also install Flask-S3 via Easy Install::
 Dependencies
 ------------
 
-Aside from the obvious dependency of Flask itself, Flask-S3 makes use of the 
-`boto`_ library for uploading assets to Amazon S3. **Note**: Flask-S3 currently 
-only supports applications that use the `jinja2`_ templating system.
+Aside from the obvious dependency of Flask itself, Flask-S3 makes use of
+the `boto`_ library for uploading assets to Amazon S3. **Note**:
+Flask-S3 currently only supports applications that use the `jinja2`_
+templating system.
 
 .. _boto: http://docs.pythonboto.org/en/latest/
 .. _jinja2: http://jinja.pocoo.org/docs/
@@ -63,9 +67,9 @@ only supports applications that use the `jinja2`_ templating system.
 Using Flask-S3
 ============== 
 
-Flask-S3 is incredibly simple to use. In order to start serving your Flask 
-application's assets from Amazon S3, the first thing to do is let Flask-S3 know 
-about your :class:`flask.Flask` application object.
+Flask-S3 is incredibly simple to use. In order to start serving your
+Flask application's assets from Amazon S3, the first thing to do is let
+Flask-S3 know about your :class:`flask.Flask` application object.
 
 .. code-block:: python
 
@@ -76,11 +80,11 @@ about your :class:`flask.Flask` application object.
     app.config['S3_BUCKET_NAME'] = 'mybucketname'
     s3 = FlaskS3(app)
 
-In many cases, however, one cannot expect a Flask instance to be ready at 
-import time, and a common pattern is to return a Flask instance from within a 
-function only after other configuration details have been taken care of. In
-these cases, Flask-S3 provides a simple function, ``init_app``, which takes your
-application as an argument.
+In many cases, however, one cannot expect a Flask instance to be ready
+at import time, and a common pattern is to return a Flask instance from
+within a function only after other configuration details have been taken
+care of. In these cases, Flask-S3 provides a simple function,
+``init_app``, which takes your application as an argument.
 
 .. code-block:: python
 
@@ -94,20 +98,21 @@ application as an argument.
         s3.init_app(app)
         return app
 
-In terms of getting your application to use external Amazon S3 URLs when 
-referring to your application's static assets, passing your ``Flask`` object to
-the ``FlaskS3`` object is all that needs to be done. Once your app is running,
-any templates that contained relative static asset locations, will instead
-contain hosted counterparts on Amazon S3.
+In terms of getting your application to use external Amazon S3 URLs when
+referring to your application's static assets, passing your ``Flask``
+object to the ``FlaskS3`` object is all that needs to be done. Once your
+app is running, any templates that contained relative static asset
+locations, will instead contain hosted counterparts on Amazon S3.
 
 Uploading your Static Assets
 ----------------------------
 
-You only need to upload your static assets to Amazon S3 once. Of course, if you
-add or modify your existing assets then you will need to repeat the uploading
-process.
+You only need to upload your static assets to Amazon S3 once. Of course,
+if you add or modify your existing assets then you will need to repeat
+the uploading process.
 
-Uploading your static assets from a Python console is as simple as follows.
+Uploading your static assets from a Python console is as simple as
+follows.
 
 .. code-block:: python
     
@@ -116,23 +121,23 @@ Uploading your static assets from a Python console is as simple as follows.
     >>> flask_s3.create_all(app)
     >>>
 
-Flask-S3 will proceed to walk through your application's static assets, 
-including those belonging to *registered* `blueprints`_, and upload them to your 
-Amazon S3 bucket.
+Flask-S3 will proceed to walk through your application's static assets,
+including those belonging to *registered* `blueprints`_, and upload them
+to your Amazon S3 bucket.
 
 .. _blueprints: http://flask.pocoo.org/docs/blueprints/
 
 Static Asset URLs
 ~~~~~~~~~~~~~~~~~
 
-Within your bucket on S3, Flask-S3 replicates the static file hierarchy defined
-in your application object and any registered blueprints. URLs generated by
-Flask-S3 will look like the following:
+Within your bucket on S3, Flask-S3 replicates the static file hierarchy
+defined in your application object and any registered blueprints. URLs
+generated by Flask-S3 will look like the following:
 
 ``/static/foo/style.css`` becomes
-``https://mybucketname.s3.amazonaws.com/static/foo/style.css``, 
-assuming that ``mybucketname`` is the name of your S3 bucket, and you have 
-chosen to have assets served over HTTPS.
+``https://mybucketname.s3.amazonaws.com/static/foo/style.css``, assuming
+that ``mybucketname`` is the name of your S3 bucket, and you have chosen
+to have assets served over HTTPS.
 
 
 .. _settings:
@@ -141,9 +146,10 @@ chosen to have assets served over HTTPS.
 Flask-S3 Options
 ----------------
 
-Within your Flask application's settings you can provide the following settings 
-to control the behvaiour of Flask-S3. None of the settings are required, but if 
-not present, some will need to be provided when uploading assets to S3.
+Within your Flask application's settings you can provide the following
+settings to control the behvaiour of Flask-S3. None of the settings are
+required, but if not present, some will need to be provided when
+uploading assets to S3.
 
 =========================== ===================================================
 `AWS_ACCESS_KEY_ID`         Your AWS access key. This does not need to be 
@@ -188,8 +194,8 @@ not present, some will need to be provided when uploading assets to S3.
 API Documentation
 =================
 
-Flask-S3 is a very simple extension. The few exposed objects, methods and
-functions are as follows.
+Flask-S3 is a very simple extension. The few exposed objects, methods
+and functions are as follows.
 
 The FlaskS3 Object
 ------------------
