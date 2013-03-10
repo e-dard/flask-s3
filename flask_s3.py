@@ -85,7 +85,8 @@ def _static_folder_path(static_url, static_folder, static_asset):
     # Now bolt the static url path and the relative asset location together
     return u'%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
 
-def _write_files(static_url_loc, static_folder, files, bucket, ex_keys=None):
+def _write_files(app, static_url_loc, static_folder, files, bucket, 
+                 ex_keys=None):
     """ Writes all the files inside a static folder to S3. """
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
@@ -94,19 +95,16 @@ def _write_files(static_url_loc, static_folder, files, bucket, ex_keys=None):
         if ex_keys and key_name in ex_keys:
             logger.debug("%s excluded from upload" % key_name)
         else:
-            app = current_app
             k = Key(bucket=bucket, name=key_name)
-            if (app.config['S3_USE_CACHE_CONTROL']
-                    and 'S3_CACHE_CONTROL' in app.config):
-                k.metadata.update({
-                    'Cache-Control': app.config['S3_CACHE_CONTROL']
-                })
+            if (app.config['S3_USE_CACHE_CONTROL'] and 
+                'S3_CACHE_CONTROL' in app.config):
+                k.set_metadata('Cache-Control', app.config['S3_CACHE_CONTROL'])
             k.set_contents_from_filename(file_path)
             k.make_public()
 
-def _upload_files(files_, bucket):
+def _upload_files(app, files_, bucket):
     for (static_folder, static_url), names in files_.iteritems():
-        _write_files(static_url, static_folder, names, bucket)
+        _write_files(app, static_url, static_folder, names, bucket)
 
 def create_all(app, user=None, password=None, bucket_name=None, 
                location='', include_hidden=False):
@@ -163,7 +161,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
         bucket.make_public(recursive=True)
     except S3CreateError as e:
         raise e
-    _upload_files(all_files, bucket)
+    _upload_files(app, all_files, bucket)
 
 
 class FlaskS3(object):

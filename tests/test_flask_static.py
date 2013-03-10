@@ -3,6 +3,7 @@ import ntpath
 
 from mock import Mock, patch, call
 from flask import Flask, render_template_string, Blueprint
+from boto.s3.key import Key
 
 import flask_s3
 from flask_s3 import FlaskS3
@@ -28,7 +29,7 @@ class FlaskStaticTest(unittest.TestCase):
         """ Tests configuration vars exist. """
         FlaskS3(self.app)
         defaults = ('S3_USE_HTTPS', 'USE_S3', 'USE_S3_DEBUG', 
-                    'S3_BUCKET_DOMAIN')
+                    'S3_BUCKET_DOMAIN', 'S3_USE_CACHE_CONTROL')
         for default in defaults:
             self.assertIn(default, self.app.config)
 
@@ -107,7 +108,11 @@ class UrlTests(unittest.TestCase):
 class S3Tests(unittest.TestCase):
 
     def setUp(self):
-        self.app = Mock(spec=Flask)
+        self.app = Flask(__name__)
+        self.app.testing = True
+        self.app.config['S3_BUCKET_NAME'] = 'foo'
+        self.app.config['S3_USE_CACHE_CONTROL'] = True
+        self.app.config['S3_CACHE_CONTROL'] = 'cache instruction'
 
     def test__bp_static_url(self):
         """ Tests test__bp_static_url """
@@ -198,10 +203,11 @@ class S3Tests(unittest.TestCase):
         assets = ['/home/z/bar.css', '/home/z/foo.css'] 
         exclude = ['/foo/static/foo.css', '/foo/static/foo/bar.css']
         # we expect foo.css to be excluded and not uploaded
-        expected = [call(bucket=None, name=u'/foo/static/bar.css'), 
+        expected = [call(bucket=None, name=u'/foo/static/bar.css'),
+                    call().set_metadata('Cache-Control', 'cache instruction'), 
                     call().set_contents_from_filename('/home/z/bar.css')]
-        flask_s3._write_files(static_url_loc, static_folder, assets, None, 
-                              exclude)
+        flask_s3._write_files(self.app, static_url_loc, static_folder, assets, 
+                              None, exclude)
         self.assertLessEqual(expected, key_mock.mock_calls)
 
     def test_static_folder_path(self):
