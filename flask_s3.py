@@ -101,9 +101,9 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
             logger.debug("%s excluded from upload" % key_name)
         else:
             k = Key(bucket=bucket, name=key_name)
-            if (app.config['S3_USE_CACHE_CONTROL'] and 
-                'S3_CACHE_CONTROL' in app.config):
-                k.set_metadata('Cache-Control', app.config['S3_CACHE_CONTROL'])
+            # Set custom headers
+            for header, value in app.config['S3_HEADERS'].items():
+                k.set_metadata(header, value)
             k.set_contents_from_filename(file_path)
             k.make_public()
 
@@ -211,7 +211,7 @@ class FlaskS3(object):
                     ('USE_S3', True), 
                     ('USE_S3_DEBUG', False),
                     ('S3_BUCKET_DOMAIN', 's3.amazonaws.com'),
-                    ('S3_USE_CACHE_CONTROL', False)]
+                    ('S3_HEADERS', {})]
         for k, v in defaults:
             app.config.setdefault(k, v)
 

@@ -163,12 +163,6 @@ uploading assets to S3.
                             **Default:** ``u's3.amazonaws.com'``
 `S3_BUCKET_NAME`            The desired name for your Amazon S3 bucket. Note: 
                             the name will be visible in all your assets' URLs.
-`S3_CACHE_CONTROL`          This sets the value of the Cache-Control header that
-                            is set in the metadata when `S3_USE_CACHE_CONTRL` is
-                            set to `True`.
-`S3_USE_CACHE_CONTROL`      Specifies whether or not to set the metadata for the
-                            Cache-Control headers.
-                            **Default:** `False`
 `S3_USE_HTTPS`              Specifies whether or not to serve your assets
                             stored in S3 over HTTPS.
                             **Default:** `True` 
@@ -186,6 +180,19 @@ uploading assets to S3.
                             **Note**: if `USE_S3` is set to `False` then
                             templates will always include asset locations
                             specified by `flask.url_for`.
+`S3_HEADERS`                Sets custom headers to be sent with each file to S3.
+
+                            .. code-block:: python
+
+                                S3_HEADERS = {
+                                    'Expires': 'Thu, 15 Apr 2010 20:00:00 GMT',
+                                    'Cache-Control': 'max-age=86400',
+                                }
+
+                            See http://developer.yahoo.com/performance/rules.html#expires
+                            for more information.
+
+                            **Default:** `{}`
 =========================== ===================================================
 
 .. _debug: http://flask.pocoo.org/docs/config/#configuration-basics
