@@ -29,7 +29,8 @@ class FlaskStaticTest(unittest.TestCase):
         """ Tests configuration vars exist. """
         FlaskS3(self.app)
         defaults = ('S3_USE_HTTPS', 'USE_S3', 'USE_S3_DEBUG', 
-                    'S3_BUCKET_DOMAIN', 'S3_USE_CACHE_CONTROL', 'S3_HEADERS')
+                    'S3_BUCKET_DOMAIN', 'S3_CDN_DOMAIN',
+                    'S3_USE_CACHE_CONTROL', 'S3_HEADERS')
         for default in defaults:
             self.assertIn(default, self.app.config)
 
@@ -41,6 +42,7 @@ class UrlTests(unittest.TestCase):
         self.app.config['S3_BUCKET_NAME'] = 'foo'
         self.app.config['S3_USE_HTTPS'] = True
         self.app.config['S3_BUCKET_DOMAIN'] = 's3.amazonaws.com'
+        self.app.config['S3_CDN_DOMAIN'] = ''
 
         @self.app.route('/<url_for_string>')
         def a(url_for_string):
