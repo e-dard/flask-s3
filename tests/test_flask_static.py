@@ -110,6 +110,12 @@ class UrlTests(unittest.TestCase):
         exp = 'https://foo.s3.amazonaws.com/admin-static/bah.js'
         self.assertEquals(self.client_get(ufs).data, exp)
 
+    def test_url_for_cdn_domain(self):
+        self.app.config['S3_CDN_DOMAIN'] = 'foo.cloudfront.net'
+        ufs = "{{url_for('static', filename='bah.js')}}"
+        exp = 'https://foo.cloudfront.net/static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, exp)
+
 
 
 class S3Tests(unittest.TestCase):
