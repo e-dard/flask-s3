@@ -152,9 +152,9 @@ headers you want to use with the `S3_HEADERS` option.
         'Cache-Control': 'max-age=86400',
     }
 
-See `yahoo`_ more information on how to set good values for your headers.
+See `Yahoo!`_ more information on how to set good values for your headers.
 
-.. _yahoo: http://developer.yahoo.com/performance/rules.html#expires
+.. _Yahoo!: http://developer.yahoo.com/performance/rules.html#expires
 
 .. _settings:
 .. _configuration:
@@ -198,14 +198,8 @@ uploading assets to S3.
                             specified by `flask.url_for`.
 `S3_HEADERS`                Sets custom headers to be sent with each file to S3.
                             **Default:** `{}`
-`S3_CACHE_CONTROL`          **Deprecated**. Please use `S3_HEADERS` instead.   
-                            This sets the value of the Cache-Control header that
-                            is set in the metadata when `S3_USE_CACHE_CONTRL` is
-                            set to `True`.
+`S3_CACHE_CONTROL`          **Deprecated**. Please use `S3_HEADERS` instead.
 `S3_USE_CACHE_CONTROL`      **Deprecated**. Please use `S3_HEADERS` instead.
-                            Specifies whether or not to set the metadata for the
-                            Cache-Control headers.
-                            **Default:** `False`
 =========================== ===================================================
 
 .. _debug: http://flask.pocoo.org/docs/config/#configuration-basics

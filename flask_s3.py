@@ -107,9 +107,6 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
             logger.debug("%s excluded from upload" % key_name)
         else:
             k = Key(bucket=bucket, name=key_name)
-            if (app.config['S3_USE_CACHE_CONTROL'] and
-                'S3_CACHE_CONTROL' in app.config):
-                k.set_metadata('Cache-Control', app.config['S3_CACHE_CONTROL'])
             # Set custom headers
             for header, value in app.config['S3_HEADERS'].iteritems():
                 k.set_metadata(header, value)
@@ -229,4 +226,6 @@ class FlaskS3(object):
 
         if app.config['USE_S3']:
             app.jinja_env.globals['url_for'] = url_for
-
+        if 'S3_USE_CACHE_CONTROL' and 'S3_CACHE_CONTROL' in app.config:
+            cache_control_header = app.config['S3_CACHE_CONTROL']
+            app.config['S3_HEADERS']['Cache-Control'] = cache_control_header
