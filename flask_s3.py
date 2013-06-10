@@ -226,6 +226,6 @@ class FlaskS3(object):
 
         if app.config['USE_S3']:
             app.jinja_env.globals['url_for'] = url_for
-        if 'S3_USE_CACHE_CONTROL' and 'S3_CACHE_CONTROL' in app.config:
+        if app.config['S3_USE_CACHE_CONTROL'] and 'S3_CACHE_CONTROL' in app.config:
             cache_control_header = app.config['S3_CACHE_CONTROL']
             app.config['S3_HEADERS']['Cache-Control'] = cache_control_header
