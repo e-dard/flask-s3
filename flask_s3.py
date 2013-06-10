@@ -10,6 +10,7 @@ from boto.s3.key import Key
 
 logger = logging.getLogger('flask_s3')
 
+
 def url_for(endpoint, **values):
     """
     Generates a URL to the given endpoint.
@@ -27,24 +28,26 @@ def url_for(endpoint, **values):
     app = current_app
     if 'S3_BUCKET_NAME' not in app.config:
         raise ValueError("S3_BUCKET_NAME not found in app configuration.")
-    
+
     if app.debug and not app.config['USE_S3_DEBUG']:
         return flask_url_for(endpoint, **values)
-    
+
     if endpoint == 'static' or endpoint.endswith('.static'):
         scheme = 'http'
         if app.config['S3_USE_HTTPS']:
             scheme = 'https'
-        bucket_path = '%s.%s' % (app.config['S3_BUCKET_NAME'], 
+        bucket_path = '%s.%s' % (app.config['S3_BUCKET_NAME'],
                                  app.config['S3_BUCKET_DOMAIN'])
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
         return urls.build(endpoint, values=values, force_external=True)
     return flask_url_for(endpoint, **values)
 
+
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
     u = u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
     return u
+
 
 def _gather_files(app, hidden):
     """ Gets all files in static folders and returns in dict."""
@@ -53,7 +56,7 @@ def _gather_files(app, hidden):
         blueprints = app.blueprints.values()
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
         dirs.extend([bp_details(x) for x in blueprints if x.static_folder])
-        
+
     valid_files = defaultdict(list)
     for static_folder, static_url_loc  in dirs:
         if not os.path.isdir(static_folder):
@@ -67,9 +70,11 @@ def _gather_files(app, hidden):
                 valid_files[(static_folder, static_url_loc)].extend(files)
     return valid_files
 
+
 def _path_to_relative_url(path):
     """ Converts a folder and filename into a ralative url path """
     return os.path.splitdrive(path)[1].replace('\\', '/')
+
 
 def _static_folder_path(static_url, static_folder, static_asset):
     """ 
@@ -88,12 +93,13 @@ def _static_folder_path(static_url, static_folder, static_asset):
     # Now bolt the static url path and the relative asset location together
     return u'%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
 
-def _write_files(app, static_url_loc, static_folder, files, bucket, 
+
+def _write_files(app, static_url_loc, static_folder, files, bucket,
                  ex_keys=None):
     """ Writes all the files inside a static folder to S3. """
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
-        key_name = _static_folder_path(static_url_loc, static_folder, 
+        key_name = _static_folder_path(static_url_loc, static_folder,
                                        asset_loc)
         msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
@@ -101,17 +107,19 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
             logger.debug("%s excluded from upload" % key_name)
         else:
             k = Key(bucket=bucket, name=key_name)
-            if (app.config['S3_USE_CACHE_CONTROL'] and 
-                'S3_CACHE_CONTROL' in app.config):
-                k.set_metadata('Cache-Control', app.config['S3_CACHE_CONTROL'])
+            # Set custom headers
+            for header, value in app.config['S3_HEADERS'].iteritems():
+                k.set_metadata(header, value)
             k.set_contents_from_filename(file_path)
             k.make_public()
+
 
 def _upload_files(app, files_, bucket):
     for (static_folder, static_url), names in files_.iteritems():
         _write_files(app, static_url, static_folder, names, bucket)
 
-def create_all(app, user=None, password=None, bucket_name=None, 
+
+def create_all(app, user=None, password=None, bucket_name=None,
                location='', include_hidden=False):
     """
     Uploads of the static assets associated with a Flask application to 
@@ -207,14 +215,17 @@ class FlaskS3(object):
 
         :param app: the :class:`flask.Flask` application object.
         """
-        defaults = [('S3_USE_HTTPS', True), 
-                    ('USE_S3', True), 
+        defaults = [('S3_USE_HTTPS', True),
+                    ('USE_S3', True),
                     ('USE_S3_DEBUG', False),
                     ('S3_BUCKET_DOMAIN', 's3.amazonaws.com'),
-                    ('S3_USE_CACHE_CONTROL', False)]
+                    ('S3_USE_CACHE_CONTROL', False),
+                    ('S3_HEADERS', {})]
         for k, v in defaults:
             app.config.setdefault(k, v)
 
         if app.config['USE_S3']:
             app.jinja_env.globals['url_for'] = url_for
-
+        if app.config['S3_USE_CACHE_CONTROL'] and 'S3_CACHE_CONTROL' in app.config:
+            cache_control_header = app.config['S3_CACHE_CONTROL']
+            app.config['S3_HEADERS']['Cache-Control'] = cache_control_header
