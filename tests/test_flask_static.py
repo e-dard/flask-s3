@@ -7,6 +7,7 @@ from flask import Flask, render_template_string, Blueprint
 import flask_s3
 from flask_s3 import FlaskS3
 
+
 class FlaskStaticTest(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
@@ -28,10 +29,9 @@ class FlaskStaticTest(unittest.TestCase):
         """ Tests configuration vars exist. """
         FlaskS3(self.app)
         defaults = ('S3_USE_HTTPS', 'USE_S3', 'USE_S3_DEBUG', 
-                    'S3_BUCKET_DOMAIN', 'S3_HEADERS')
+                    'S3_BUCKET_DOMAIN', 'S3_USE_CACHE_CONTROL', 'S3_HEADERS')
         for default in defaults:
             self.assertIn(default, self.app.config)
-
 
 
 class UrlTests(unittest.TestCase):
@@ -117,10 +117,10 @@ class S3Tests(unittest.TestCase):
         self.app.testing = True
         self.app.config['S3_BUCKET_NAME'] = 'foo'
         self.app.config['S3_USE_CACHE_CONTROL'] = True
+        self.app.config['S3_CACHE_CONTROL'] = 'cache instruction'
         self.app.config['S3_HEADERS'] = {
             'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
             'Content-Encoding': 'gzip',
-            'Cache-Control': 'max-age=86400'
         }
 
     def test__bp_static_url(self):
@@ -213,8 +213,8 @@ class S3Tests(unittest.TestCase):
         exclude = ['/foo/static/foo.css', '/foo/static/foo/bar.css']
         # we expect foo.css to be excluded and not uploaded
         expected = [call(bucket=None, name=u'/foo/static/bar.css'),
+                    call().set_metadata('Cache-Control', 'cache instruction'),
                     call().set_metadata('Expires', 'Thu, 31 Dec 2037 23:59:59 GMT'),
-                    call().set_metadata('Cache-Control', 'max-age=86400'),
                     call().set_metadata('Content-Encoding', 'gzip'),
                     call().set_contents_from_filename('/home/z/bar.css')]
         flask_s3._write_files(self.app, static_url_loc, static_folder, assets, 
