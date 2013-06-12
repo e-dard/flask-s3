@@ -177,6 +177,11 @@ uploading assets to S3.
 `S3_BUCKET_DOMAIN`          The domain part of the URI for your S3 bucket. You 
                             probably won't need to change this.
                             **Default:** ``u's3.amazonaws.com'``
+'S3_CDN_DOMAIN'             AWS makes it easy to attach CloudFront to an S3
+                            bucket. If you want to use this or another CDN,
+                            set the base domain here. This is distinct from the
+                            'S3_BUCKET_DOMAIN` since it will not include the
+                            bucket name in the base url.
 `S3_BUCKET_NAME`            The desired name for your Amazon S3 bucket. Note: 
                             the name will be visible in all your assets' URLs.
 `S3_USE_HTTPS`              Specifies whether or not to serve your assets

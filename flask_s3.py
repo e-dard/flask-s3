@@ -38,6 +38,8 @@ def url_for(endpoint, **values):
             scheme = 'https'
         bucket_path = '%s.%s' % (app.config['S3_BUCKET_NAME'],
                                  app.config['S3_BUCKET_DOMAIN'])
+        if app.config['S3_CDN_DOMAIN']:
+            bucket_path = '%s' % app.config['S3_CDN_DOMAIN']
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
         return urls.build(endpoint, values=values, force_external=True)
     return flask_url_for(endpoint, **values)
@@ -219,8 +221,10 @@ class FlaskS3(object):
                     ('USE_S3', True),
                     ('USE_S3_DEBUG', False),
                     ('S3_BUCKET_DOMAIN', 's3.amazonaws.com'),
+                    ('S3_CDN_DOMAIN', ''),
                     ('S3_USE_CACHE_CONTROL', False),
                     ('S3_HEADERS', {})]
+
         for k, v in defaults:
             app.config.setdefault(k, v)
 
