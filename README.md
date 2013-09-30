@@ -12,4 +12,4 @@ Flask-S3 is maintained by @e-dard and @eriktaubeneck.
 
 Documentation
 -------------
-The latest documentation for Flask-S3 can be found [here](https://flask-s3.readthedocs.org/en/v0.1.5/).
+The latest documentation for Flask-S3 can be found [here](https://flask-s3.readthedocs.org/en/latest/).
