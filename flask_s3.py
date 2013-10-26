@@ -29,9 +29,6 @@ def url_for(endpoint, **values):
     if 'S3_BUCKET_NAME' not in app.config:
         raise ValueError("S3_BUCKET_NAME not found in app configuration.")
 
-    if app.debug and not app.config['USE_S3_DEBUG']:
-        return flask_url_for(endpoint, **values)
-
     if endpoint == 'static' or endpoint.endswith('.static'):
         scheme = 'http'
         if app.config['S3_USE_HTTPS']:
@@ -227,6 +224,9 @@ class FlaskS3(object):
 
         for k, v in defaults:
             app.config.setdefault(k, v)
+
+        if app.debug and not app.config['USE_S3_DEBUG']:
+            app.config['USE_S3'] = False
 
         if app.config['USE_S3']:
             app.jinja_env.globals['url_for'] = url_for
