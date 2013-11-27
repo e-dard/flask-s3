@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from flask import url_for as flask_url_for
 from flask import current_app
+from jinja2 import contextfunction
 from boto.s3.connection import S3Connection
 from boto.exception import S3CreateError
 from boto.s3.key import Key
@@ -45,6 +46,27 @@ def url_for(endpoint, **values):
     return flask_url_for(endpoint, **values)
 
 
+def active_theme(ctx):
+    # From flask.ext.themes
+    if '_theme' in ctx:
+        return ctx['_theme']
+    elif ctx.name.startswith('_themes/'):
+        return ctx.name[8:].split('/', 1)[0]
+    else:
+        raise RuntimeError("Could not find the active theme")
+
+
+@contextfunction
+def theme_static(ctx, filename, external=False):
+    from flask.ext.themes import active_theme, global_theme_static
+    app = current_app
+
+    if app.debug and not app.config['USE_S3_DEBUG']:
+        return flask_url_for('_themes.static', themeid=active_theme(ctx), filename=filename, _external=external)
+
+    return url_for('_themes.static', themeid=active_theme(ctx), filename=filename)
+
+
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
     u = u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
@@ -54,6 +76,9 @@ def _bp_static_url(blueprint):
 def _gather_files(app, hidden):
     """ Gets all files in static folders and returns in dict."""
     dirs = [(unicode(app.static_folder), app.static_url_path)]
+    if hasattr(app, 'theme_manager'):
+        for name, theme in app.theme_manager.themes.items():
+            dirs.append((theme.static_path, "_themes/{}/".format(name)))
     if hasattr(app, 'blueprints'):
         blueprints = app.blueprints.values()
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
@@ -220,6 +245,7 @@ class FlaskS3(object):
         defaults = [('S3_USE_HTTPS', True),
                     ('USE_S3', True),
                     ('USE_S3_DEBUG', False),
+                    ('USE_S3_THEMES', False),
                     ('S3_BUCKET_DOMAIN', 's3.amazonaws.com'),
                     ('S3_CDN_DOMAIN', ''),
                     ('S3_USE_CACHE_CONTROL', False),
@@ -230,6 +256,8 @@ class FlaskS3(object):
 
         if app.config['USE_S3']:
             app.jinja_env.globals['url_for'] = url_for
+        if app.config['USE_S3'] and app.config['USE_S3_THEMES']:
+            app.jinja_env.globals['theme_static'] = theme_static
         if app.config['S3_USE_CACHE_CONTROL'] and 'S3_CACHE_CONTROL' in app.config:
             cache_control_header = app.config['S3_CACHE_CONTROL']
             app.config['S3_HEADERS']['Cache-Control'] = cache_control_header
