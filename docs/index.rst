@@ -18,7 +18,7 @@ Flask-S3 has two main functions:
  1. Walk through your application's static folders, gather all your
     static assets together, and upload them to a bucket of your choice
     on S3;
- 
+
  2. Replace the URLs that Flask's :func:`flask.url_for` function would
     insert into your templates, with URLs that point to the static
     assets in your S3 bucket.
@@ -30,7 +30,7 @@ it to work. The location of the S3 bucket can be inferred from Flask-S3
 application is running there need not be any communication between the
 Flask application and Amazon S3.
 
-Internally, every time ``url_for`` is called in one of your 
+Internally, every time ``url_for`` is called in one of your
 application's templates, `flask_s3.url_for` is instead invoked. If the
 endpoint provided is deemed to refer to static assets, then the S3 URL
 for the asset specified in the `filename` argument is instead returned.
@@ -65,7 +65,7 @@ templating system.
 
 
 Using Flask-S3
-============== 
+==============
 
 Flask-S3 is incredibly simple to use. In order to start serving your
 Flask application's assets from Amazon S3, the first thing to do is let
@@ -115,7 +115,7 @@ Uploading your static assets from a Python console is as simple as
 follows.
 
 .. code-block:: python
-    
+
     >>> import flask_s3
     >>> from my_application import app
     >>> flask_s3.create_all(app)
@@ -168,33 +168,39 @@ required, but if not present, some will need to be provided when
 uploading assets to S3.
 
 =========================== ===================================================
-`AWS_ACCESS_KEY_ID`         Your AWS access key. This does not need to be 
+`AWS_ACCESS_KEY_ID`         Your AWS access key. This does not need to be
                             stored in your configuration if you choose to pass
                             it directly when uploading your assets.
-`AWS_SECRET_ACCESS_KEY`     Your AWS secret key. As with the access key, this 
+`AWS_SECRET_ACCESS_KEY`     Your AWS secret key. As with the access key, this
                             need not be stored in your configuration if passed
                             in to `create_all`.
-`S3_BUCKET_DOMAIN`          The domain part of the URI for your S3 bucket. You 
+`S3_BUCKET_DOMAIN`          The domain part of the URI for your S3 bucket. You
                             probably won't need to change this.
                             **Default:** ``u's3.amazonaws.com'``
-'S3_CDN_DOMAIN'             AWS makes it easy to attach CloudFront to an S3
+`S3_CDN_DOMAIN`             AWS makes it easy to attach CloudFront to an S3
                             bucket. If you want to use this or another CDN,
                             set the base domain here. This is distinct from the
-                            'S3_BUCKET_DOMAIN` since it will not include the
+                            `S3_BUCKET_DOMAIN` since it will not include the
                             bucket name in the base url.
-`S3_BUCKET_NAME`            The desired name for your Amazon S3 bucket. Note: 
+`S3_BUCKET_NAME`            The desired name for your Amazon S3 bucket. Note:
                             the name will be visible in all your assets' URLs.
 `S3_USE_HTTPS`              Specifies whether or not to serve your assets
                             stored in S3 over HTTPS.
-                            **Default:** `True` 
-`USE_S3`                    This setting allows you to toggle whether Flask-S3 
-                            is active or not. When set to `False` your 
+                            **Default:** `True`
+`USE_S3`                    This setting allows you to toggle whether Flask-S3
+                            is active or not. When set to `False` your
                             application's templates will revert to including
                             static asset locations determined by
                             `flask.url_for`.
                             **Default:** `True`
-`USE_S3_DEBUG`              By default, Flask-S3 will be switched off when 
-                            running your application in `debug`_ mode, so that 
+                            **Note**: if you run your application in `debug`_
+                            mode (and `USE_S3_DEBUG` is `False` - see next
+                            item), `USE_S3` will be changed to `False`. This
+                            allows the `USE_S3` config variable to be the
+                            definitive check as to whether `flask_s3.url_for`
+                            is overriding `flask.url_for`.
+`USE_S3_DEBUG`              By default, Flask-S3 will be switched off when
+                            running your application in `debug`_ mode, so that
                             your templates include static asset locations
                             specified by `flask.url_for`. If you wish to enable
                             Flask-S3 in debug mode, set this value to `True`.
