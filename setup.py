@@ -23,6 +23,7 @@ setup(
     install_requires=[
         'Flask',
         'Boto>=2.5.2'
+        'tqdm'
     ],
     tests_require=['nose', 'mock'],
     classifiers=[

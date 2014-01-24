@@ -7,6 +7,7 @@ from flask import current_app
 from boto.s3.connection import S3Connection
 from boto.exception import S3CreateError
 from boto.s3.key import Key
+from tqdm import tqdm
 
 logger = logging.getLogger('flask_s3')
 
@@ -15,14 +16,14 @@ def url_for(endpoint, **values):
     """
     Generates a URL to the given endpoint.
 
-    If the endpoint is for a static resource then an Amazon S3 URL is 
+    If the endpoint is for a static resource then an Amazon S3 URL is
     generated, otherwise the call is passed on to `flask.url_for`.
 
-    Because this function is set as a jinja environment variable when 
-    `FlaskS3.init_app` is invoked, this function replaces 
+    Because this function is set as a jinja environment variable when
+    `FlaskS3.init_app` is invoked, this function replaces
     `flask.url_for` in templates automatically. It is unlikely that this
-    function will need to be directly called from within your 
-    application code, unless you need to refer to static assets outside 
+    function will need to be directly called from within your
+    application code, unless you need to refer to static assets outside
     of your templates.
     """
     app = current_app
@@ -57,13 +58,14 @@ def _gather_files(app, hidden):
         dirs.extend([bp_details(x) for x in blueprints if x.static_folder])
 
     valid_files = defaultdict(list)
-    for static_folder, static_url_loc  in dirs:
+
+    for static_folder, static_url_loc in dirs:
         if not os.path.isdir(static_folder):
             logger.warning("WARNING - [%s does not exist]" % static_folder)
         else:
             logger.debug("Checking static folder: %s" % static_folder)
         for root, _, files in os.walk(static_folder):
-            files = [os.path.join(root, x) \
+            files = [os.path.join(root, x)
                      for x in files if hidden or x[0] != '.']
             if files:
                 valid_files[(static_folder, static_url_loc)].extend(files)
@@ -76,14 +78,14 @@ def _path_to_relative_url(path):
 
 
 def _static_folder_path(static_url, static_folder, static_asset):
-    """ 
-    Returns a path to a file based on the static folder, and not on the 
+    """
+    Returns a path to a file based on the static folder, and not on the
     filesystem holding the file.
 
     Returns a path relative to static_url for static_asset
     """
-    # first get the asset path relative to the static folder. 
-    # static_asset is not simply a filename because it could be 
+    # first get the asset path relative to the static folder.
+    # static_asset is not simply a filename because it could be
     # sub-directory then file etc.
     if not static_asset.startswith(static_folder):
         raise ValueError("%s startic asset must be under %s static folder" %
@@ -96,6 +98,10 @@ def _static_folder_path(static_url, static_folder, static_asset):
 def _write_files(app, static_url_loc, static_folder, files, bucket,
                  ex_keys=None):
     """ Writes all the files inside a static folder to S3. """
+
+    if logger.level == logging.INFO:
+        files = tqdm(files, desc='Uploading from %s to %s'  % (static_url_loc, bucket.name))
+
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
         key_name = _static_folder_path(static_url_loc, static_folder,
@@ -118,15 +124,33 @@ def _upload_files(app, files_, bucket):
         _write_files(app, static_url, static_folder, names, bucket)
 
 
+def _get_or_create_bucket(conn, bucket_name, location):
+    """Helper for :function:`create_all`. Returns bucket object by name, 
+    if not existing create and return it.
+
+    :internal:
+    """
+    bucket = conn.lookup(bucket_name, validate=False)
+    if bucket:
+        return bucket
+    try:
+        bucket = conn.create_bucket(bucket_name, location=location)
+        bucket.make_public(recursive=False)
+    except S3CreateError as e:
+        raise e
+
+    return bucket
+
+
 def create_all(app, user=None, password=None, bucket_name=None,
                location='', include_hidden=False):
     """
-    Uploads of the static assets associated with a Flask application to 
+    Uploads of the static assets associated with a Flask application to
     Amazon S3.
 
-    All static assets are identified on the local filesystem, including 
-    any static assets associated with *registered* blueprints. In turn, 
-    each asset is uploaded to the bucket described by `bucket_name`. If 
+    All static assets are identified on the local filesystem, including
+    any static assets associated with *registered* blueprints. In turn,
+    each asset is uploaded to the bucket described by `bucket_name`. If
     the bucket does not exist then it is created.
 
     Flask-S3 creates the same relative static asset folder structure on
@@ -143,22 +167,22 @@ def create_all(app, user=None, password=None, bucket_name=None,
     :type user: `basestring` or None
 
     :param password: an AWS Secret Access Key. You can find this key in
-                     the Security Credentials section of your AWS 
+                     the Security Credentials section of your AWS
                      account.
     :type password: `basestring` or None
-    
+
     :param bucket_name: the name of the bucket you wish to server your
-                        static assets from. **Note**: while a valid 
-                        character, it is recommended that you do not 
-                        include periods in bucket_name if you wish to 
+                        static assets from. **Note**: while a valid
+                        character, it is recommended that you do not
+                        include periods in bucket_name if you wish to
                         serve over HTTPS. See Amazon's `bucket
                         restrictions`_ for more details.
     :type bucket_name: `basestring` or None
 
     :param location: the AWS region to host the bucket in; an empty
                      string indicates the default region should be used,
-                     which is the US Standard region. Possible location 
-                     values include: `'DEFAULT'`, `'EU'`, `'USWest'`, 
+                     which is the US Standard region. Possible location
+                     values include: `'DEFAULT'`, `'EU'`, `'USWest'`,
                      `'APSoutheast'`
     :type location: `basestring` or None
 
@@ -178,30 +202,31 @@ def create_all(app, user=None, password=None, bucket_name=None,
         bucket_name = app.config['S3_BUCKET_NAME']
     if not bucket_name:
         raise ValueError("No bucket name provided.")
+
     # build list of static files
     all_files = _gather_files(app, include_hidden)
-    logger.debug("All valid files: %s" % all_files)
-    conn = S3Connection(user, password) # connect to s3
+    for (static_folder, static_url_loc), files in all_files.iteritems():
+        logger.debug('%s valid files in folder "%s" with local url "%s"', len(files), static_folder, static_url_loc)
+    # connect to s3
+    conn = S3Connection(user, password)
     # get_or_create bucket
-    try:
-        bucket = conn.create_bucket(bucket_name, location=location)
-        bucket.make_public(recursive=True)
-    except S3CreateError as e:
-        raise e
+    bucket = _get_or_create_bucket(conn, bucket_name, location)
     _upload_files(app, all_files, bucket)
 
 
 class FlaskS3(object):
+
     """
     The FlaskS3 object allows your application to use Flask-S3.
 
-    When initialising a FlaskS3 object you may optionally provide your 
-    :class:`flask.Flask` application object if it is ready. Otherwise, 
+    When initialising a FlaskS3 object you may optionally provide your
+    :class:`flask.Flask` application object if it is ready. Otherwise,
     you may provide it later by using the :meth:`init_app` method.
 
     :param app: optional :class:`flask.Flask` application object
     :type app: :class:`flask.Flask` or None
     """
+
     def __init__(self, app=None):
         if app is not None:
             self.init_app(app)
@@ -209,7 +234,7 @@ class FlaskS3(object):
     def init_app(self, app):
         """
         An alternative way to pass your :class:`flask.Flask` application
-        object to Flask-S3. :meth:`init_app` also takes care of some 
+        object to Flask-S3. :meth:`init_app` also takes care of some
         default `settings`_.
 
         :param app: the :class:`flask.Flask` application object.
