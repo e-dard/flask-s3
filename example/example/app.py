@@ -8,10 +8,12 @@ app.config['USE_S3_DEBUG'] = True
 
 s3 = FlaskS3(app)
 
+
 @app.route('/')
 def index():
     template_str = """{{ url_for('static', filename="foo.js") }}"""
     return render_template_string(template_str)
+
 
 def upload_all():
     create_all(app, user='MY_AWS_ID', password='MY_AWS_SECRET')
