@@ -34,10 +34,10 @@ def url_for(endpoint, **values):
         scheme = 'http'
         if app.config['S3_USE_HTTPS']:
             scheme = 'https'
-        bucket_path = '%s.%s' % (app.config['S3_BUCKET_NAME'],
-                                 app.config['S3_BUCKET_DOMAIN'])
+        bucket_path = '{0}.{1}'.format(app.config['S3_BUCKET_NAME'],
+                                       app.config['S3_BUCKET_DOMAIN'])
         if app.config['S3_CDN_DOMAIN']:
-            bucket_path = '%s' % app.config['S3_CDN_DOMAIN']
+            bucket_path = '{0}'.format(app.config['S3_CDN_DOMAIN'])
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
         return urls.build(endpoint, values=values, force_external=True)
     return flask_url_for(endpoint, **values)
@@ -45,7 +45,7 @@ def url_for(endpoint, **values):
 
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
-    u = u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
+    u = u'{0}{1}'.format(blueprint.url_prefix or '', blueprint.static_url_path or '')
     return u
 
 
@@ -61,9 +61,9 @@ def _gather_files(app, hidden):
 
     for static_folder, static_url_loc in dirs:
         if not os.path.isdir(static_folder):
-            logger.warning("WARNING - [%s does not exist]" % static_folder)
+            logger.warning("WARNING - [{0} does not exist]".format(static_folder))
         else:
-            logger.debug("Checking static folder: %s" % static_folder)
+            logger.debug("Checking static folder: {0}".format(static_folder))
         for root, _, files in os.walk(static_folder):
             files = [os.path.join(root, x)
                      for x in files if hidden or x[0] != '.']
@@ -88,11 +88,11 @@ def _static_folder_path(static_url, static_folder, static_asset):
     # static_asset is not simply a filename because it could be
     # sub-directory then file etc.
     if not static_asset.startswith(static_folder):
-        raise ValueError("%s startic asset must be under %s static folder" %
-                         (static_asset, static_folder))
+        raise ValueError("{0} startic asset must be under {1} static folder".format(static_asset, 
+                                                                                    static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
-    return u'%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
+    return u'{0}/{1}'.format(static_url.rstrip('/'), rel_asset.lstrip('/'))
 
 
 def _write_files(app, static_url_loc, static_folder, files, bucket,
@@ -100,16 +100,16 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
     """ Writes all the files inside a static folder to S3. """
 
     if logger.level == logging.INFO:
-        files = tqdm(files, desc='Uploading from %s to %s' % (static_url_loc, bucket.name))
+        files = tqdm(files, desc='Uploading from {0} to {1}'.format(static_url_loc, bucket.name))
 
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
         key_name = _static_folder_path(static_url_loc, static_folder,
                                        asset_loc)
-        msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
+        msg = "Uploading {0} to {1} as {2}".format(file_path, bucket, key_name)
         logger.debug(msg)
         if ex_keys and key_name in ex_keys:
-            logger.debug("%s excluded from upload" % key_name)
+            logger.debug("{0} excluded from upload".format(key_name))
         else:
             k = Key(bucket=bucket, name=key_name)
             # Set custom headers
@@ -206,7 +206,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
     # build list of static files
     all_files = _gather_files(app, include_hidden)
     for (static_folder, static_url_loc), files in all_files.iteritems():
-        logger.debug('%s valid files in folder "%s" with local url "%s"', len(files), static_folder, static_url_loc)
+        logger.debug('{0} valid files in folder "{1}" with local url "{2}"'.format(len(files), static_folder, static_url_loc))
     # connect to s3
     conn = S3Connection(user, password)
     # get_or_create bucket
