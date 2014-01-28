@@ -1,4 +1,3 @@
-import unittest
 import ntpath
 
 from mock import Mock, patch, call
@@ -8,7 +7,7 @@ import flask_s3
 from flask_s3 import FlaskS3
 
 
-class FlaskStaticTest(unittest.TestCase):
+class TestStatic(object):
     def setUp(self):
         self.app = Flask(__name__)
         self.app.testing = True
@@ -34,7 +33,7 @@ class FlaskStaticTest(unittest.TestCase):
             assert default in self.app.config
 
 
-class UrlTests(unittest.TestCase):
+class TestUrls(object):
     def setUp(self):
         self.app = Flask(__name__)
         self.app.testing = True
@@ -129,7 +128,7 @@ class UrlTests(unittest.TestCase):
 
 
 
-class S3Tests(unittest.TestCase):
+class TestS3(object):
 
     def setUp(self):
         self.app = Flask(__name__)
