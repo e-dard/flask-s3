@@ -1,7 +1,22 @@
 *.pyc
+
+# coverage files
+*.coverage
+htmlcov
+cover
+
+# temporary files
+*~
+
+# mac os x 
 .DS_Store
-*.egg
+
+# build artifacts from python setup.py build or python setup.py install
+build/
+dist/
 *.egg-info
-dist
+*egg*/
+docs/_build
+
+# idea project file 
 /.idea
-_build
