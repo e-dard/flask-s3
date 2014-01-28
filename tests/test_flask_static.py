@@ -18,12 +18,11 @@ class FlaskStaticTest(unittest.TestCase):
 
     def test_jinja_url_for(self):
         """ Tests that the jinja global gets assigned correctly. """
-        self.assertNotEqual(self.app.jinja_env.globals['url_for'],
-                            flask_s3.url_for)
+        assert self.app.jinja_env.globals['url_for'] != flask_s3.url_for
+
         # then we initialise the extension
         FlaskS3(self.app)
-        self.assertEquals(self.app.jinja_env.globals['url_for'],
-                          flask_s3.url_for)
+        assert self.app.jinja_env.globals['url_for'] == flask_s3.url_for
 
     def test_config(self):
         """ Tests configuration vars exist. """
@@ -32,7 +31,7 @@ class FlaskStaticTest(unittest.TestCase):
                     'S3_BUCKET_DOMAIN', 'S3_CDN_DOMAIN',
                     'S3_USE_CACHE_CONTROL', 'S3_HEADERS')
         for default in defaults:
-            self.assertIn(default, self.app.config)
+            assert default in self.app.config
 
 
 class UrlTests(unittest.TestCase):
@@ -62,7 +61,7 @@ class UrlTests(unittest.TestCase):
     def client_get(self, ufs):
         FlaskS3(self.app)
         client = self.app.test_client()
-        return client.get('/%s' % ufs)
+        return client.get('/{0}'.format(ufs))
 
     def test_required_config(self):
         """
@@ -77,18 +76,21 @@ class UrlTests(unittest.TestCase):
             self.client_get(ufs)
         except ValueError:
             raises = True
-        self.assertTrue(raises)
+
+        assert raises
+
 
     def test_url_for(self):
         """
         Tests that correct url formed for static asset in self.app.
         """
         # non static endpoint url_for in template
-        self.assertEquals(self.client_get('').data, '/')
+        assert self.client_get('').data == '/'
+
         # static endpoint url_for in template
         ufs = "{{url_for('static', filename='bah.js')}}"
         exp = 'https://foo.s3.amazonaws.com/static/bah.js'
-        self.assertEquals(self.client_get(ufs).data, exp)
+        assert self.client_get(ufs).data == exp
 
     def test_url_for_debug(self):
         """Tests Flask-S3 behaviour in debug mode."""
@@ -96,7 +98,8 @@ class UrlTests(unittest.TestCase):
         # static endpoint url_for in template
         ufs = "{{url_for('static', filename='bah.js')}}"
         exp = '/static/bah.js'
-        self.assertEquals(self.client_get(ufs).data, exp)
+
+        assert self.client_get(ufs).data == exp
 
     def test_url_for_debug_override(self):
         """Tests Flask-S3 behavior in debug mode with USE_S3_DEBUG turned on."""
@@ -104,7 +107,8 @@ class UrlTests(unittest.TestCase):
         self.app.config['USE_S3_DEBUG'] = True
         ufs = "{{url_for('static', filename='bah.js')}}"
         exp = 'https://foo.s3.amazonaws.com/static/bah.js'
-        self.assertEquals(self.client_get(ufs).data, exp)
+
+        assert self.client_get(ufs).data == exp
 
     def test_url_for_blueprint(self):
         """
@@ -113,13 +117,15 @@ class UrlTests(unittest.TestCase):
         # static endpoint url_for in template
         ufs = "{{url_for('admin.static', filename='bah.js')}}"
         exp = 'https://foo.s3.amazonaws.com/admin-static/bah.js'
-        self.assertEquals(self.client_get(ufs).data, exp)
+
+        assert self.client_get(ufs).data == exp
 
     def test_url_for_cdn_domain(self):
         self.app.config['S3_CDN_DOMAIN'] = 'foo.cloudfront.net'
         ufs = "{{url_for('static', filename='bah.js')}}"
         exp = 'https://foo.cloudfront.net/static/bah.js'
-        self.assertEquals(self.client_get(ufs).data, exp)
+
+        assert self.client_get(ufs).data == exp
 
 
 
@@ -143,7 +149,9 @@ class S3Tests(unittest.TestCase):
                Mock(static_url_path='/b/bar', url_prefix='/pref'),
                Mock(static_url_path=None, url_prefix=None)]
         expected = [u'/foo', u'/pref', u'/pref/b/bar', u'']
-        self.assertEquals(expected, [flask_s3._bp_static_url(x) for x in bps])
+
+        assert expected == [flask_s3._bp_static_url(x) for x in bps]
+
 
     @patch('os.walk')
     @patch('os.path.isdir')
@@ -171,11 +179,13 @@ class S3Tests(unittest.TestCase):
                                                '/home/zoo/foo/d',
                                                '/home/zoo/foo/e']}
         actual = flask_s3._gather_files(self.app, False)
-        self.assertEqual(expected, actual)
+
+        assert expected == actual
 
         expected[('/home', u'/static')] = ['/home/.a']
         actual = flask_s3._gather_files(self.app, True)
-        self.assertEqual(expected, actual)
+
+        assert expected == actual
 
     @patch('os.walk')
     @patch('os.path.isdir')
@@ -190,7 +200,8 @@ class S3Tests(unittest.TestCase):
         path_mock.return_value = True
 
         actual = flask_s3._gather_files(self.app, False)
-        self.assertEqual({}, actual)
+        assert {} == actual
+
 
     @patch('os.walk')
     @patch('os.path.isdir')
@@ -204,7 +215,7 @@ class S3Tests(unittest.TestCase):
         path_mock.return_value = False
 
         actual = flask_s3._gather_files(self.app, False)
-        self.assertEqual({}, actual)
+        assert {} == actual
 
     @patch('os.path.splitdrive', side_effect=ntpath.splitdrive)
     @patch('os.path.join', side_effect=ntpath.join)
@@ -215,7 +226,7 @@ class S3Tests(unittest.TestCase):
         expected = ['/foo/bar/baz.css', '/foo/bar.css', '/foo/bar.css']
         for in_, exp in zip(input_, expected):
             actual = flask_s3._path_to_relative_url(in_)
-            self.assertEquals(exp, actual)
+            assert exp == actual
 
     @patch('flask_s3.Key')
     def test__write_files(self, key_mock):
@@ -232,7 +243,9 @@ class S3Tests(unittest.TestCase):
                     call().set_contents_from_filename('/home/z/bar.css')]
         flask_s3._write_files(self.app, static_url_loc, static_folder, assets,
                               None, exclude)
-        self.assertLessEqual(expected, key_mock.mock_calls)
+
+        assert expected < key_mock.mock_calls
+
 
     def test_static_folder_path(self):
         """ Tests _static_folder_path """
@@ -242,7 +255,4 @@ class S3Tests(unittest.TestCase):
         expected = [u'/static/foo.css', u'/foo/static/a/b.css',
                     u'/bar/s/a/b.css']
         for i, e in zip(inputs, expected):
-            self.assertEquals(e, flask_s3._static_folder_path(*i))
-
-if __name__ == '__main__':
-    unittest.main()
+            assert e == flask_s3._static_folder_path(*i)
