@@ -17,15 +17,17 @@ setup(
     description='Seamlessly serve the static files of your Flask app from Amazon S3',
     long_description=__doc__,
     py_modules=['flask_s3'],
+    keywords=['Flask', 'AWS', 'S3'],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
     install_requires=[
         'Flask',
-        'Boto>=2.5.2'
+        'Boto>=2.5.2',
         'tqdm'
     ],
-    tests_require=['nose', 'mock'],
+    tests_require=['nose2', 'mock'],
+    test_suite='nose2.collector.collector',
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',

@@ -100,7 +100,7 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
     """ Writes all the files inside a static folder to S3. """
 
     if logger.level == logging.INFO:
-        files = tqdm(files, desc='Uploading from %s to %s'  % (static_url_loc, bucket.name))
+        files = tqdm(files, desc='Uploading from %s to %s' % (static_url_loc, bucket.name))
 
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
@@ -125,7 +125,7 @@ def _upload_files(app, files_, bucket):
 
 
 def _get_or_create_bucket(conn, bucket_name, location):
-    """Helper for :function:`create_all`. Returns bucket object by name, 
+    """Helper for :function:`create_all`. Returns bucket object by name,
     if not existing create and return it.
 
     :internal:
