@@ -130,7 +130,7 @@ def _get_or_create_bucket(conn, bucket_name, location):
 
     :internal:
     """
-    bucket = conn.lookup(bucket_name, validate=False)
+    bucket = conn.lookup(bucket_name, validate=True)
     if bucket:
         return bucket
     try:
