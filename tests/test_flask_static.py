@@ -55,9 +55,14 @@ class UrlTests(unittest.TestCase):
         bp = Blueprint('admin', __name__, static_folder='admin-static')
         @bp.route('/<url_for_string>')
         def c():
-            return render_template_string("{{url_for('b')}}")
+            return render_template_string("{{url_for('c')}}")
         self.app.register_blueprint(bp)
 
+        bp_with_subdomain = Blueprint('settings', __name__, static_folder='billing-static', subdomain='billing')
+        @bp_with_subdomain.route('/<url_for_string>')
+        def d():
+            return render_template_string("{{url_for('d')}}")
+        self.app.register_blueprint(bp_with_subdomain)
 
     def client_get(self, ufs):
         FlaskS3(self.app)
@@ -121,6 +126,21 @@ class UrlTests(unittest.TestCase):
         exp = 'https://foo.cloudfront.net/static/bah.js'
         self.assertEquals(self.client_get(ufs).data, exp)
 
+    def test_url_for_blueprint_with_subdomain(self):
+        """
+        Tests that correct url formed for static asset in blueprint with subdomain.
+        """
+        # static endpoint url_for in template
+        ufs = "{{url_for('settings.static', filename='bah.js')}}"
+        exp = 'https://foo.s3.amazonaws.com/billing/billing-static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, exp)
+
+
+    def test_url_for_cdn_domain_for_blueprint_with_subdomain(self):
+        self.app.config['S3_CDN_DOMAIN'] = 'foo.cloudfront.net'
+        ufs = "{{url_for('settings.static', filename='bah.js')}}"
+        exp = 'https://foo.cloudfront.net/billing/billing-static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, exp)
 
 
 class S3Tests(unittest.TestCase):
