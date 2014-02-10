@@ -184,10 +184,9 @@ uploading assets to S3.
                             bucket name in the base url.
 `S3_BUCKET_NAME`            The desired name for your Amazon S3 bucket. Note:
                             the name will be visible in all your assets' URLs.
-`S3_URL_STYLE`              Specifies the style for S3 URLs. Set to `'host'`
-                            to use virtual-host-style URLs, e.g.
-                            ``bucketname.s3.amazonaws.com``. Set to `'path'`
-                            to use path-style URLs, e.g.
+`S3_URL_STYLE`              Set to `'host'` to use virtual-host-style URLs,
+                            e.g. ``bucketname.s3.amazonaws.com``. Set to
+                            `'path'` to use path-style URLs, e.g.
                             ``s3.amazonaws.com/bucketname``.
                             **Default:** `'host'`
 `S3_USE_HTTPS`              Specifies whether or not to serve your assets
