@@ -6,11 +6,18 @@ from flask import Flask, render_template_string, Blueprint
 import flask_s3
 from flask_s3 import FlaskS3
 
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
-class TestStatic(object):
+
+class TestStatic(unittest.TestCase):
+
     def setUp(self):
         self.app = Flask(__name__)
         self.app.testing = True
+
         @self.app.route('/<url_for_string>')
         def a(url_for_string):
             return render_template_string(url_for_string)
@@ -34,7 +41,8 @@ class TestStatic(object):
             self.assertIn(default, self.app.config)
 
 
-class TestUrls(object):
+class TestUrls(unittest.TestCase):
+
     def setUp(self):
         self.app = Flask(__name__)
         self.app.testing = True
@@ -52,11 +60,11 @@ class TestUrls(object):
             return render_template_string("{{url_for('b')}}")
 
         bp = Blueprint('admin', __name__, static_folder='admin-static')
+
         @bp.route('/<url_for_string>')
         def c():
             return render_template_string("{{url_for('b')}}")
         self.app.register_blueprint(bp)
-
 
     def client_get(self, ufs):
         FlaskS3(self.app)
@@ -121,8 +129,7 @@ class TestUrls(object):
         self.assertEquals(self.client_get(ufs).data, exp)
 
 
-
-class TestS3(object):
+class TestS3(unittest.TestCase):
 
     def setUp(self):
         self.app = Flask(__name__)
@@ -242,6 +249,3 @@ class TestS3(object):
                     u'/bar/s/a/b.css']
         for i, e in zip(inputs, expected):
             self.assertEquals(e, flask_s3._static_folder_path(*i))
-
-if __name__ == '__main__':
-    unittest.main()

@@ -45,7 +45,9 @@ def url_for(endpoint, **values):
 
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
-    u = u'{0}{1}'.format(blueprint.url_prefix or '', blueprint.static_url_path or '')
+    u = u'{0}{1}'.format(
+        blueprint.url_prefix or '',
+        blueprint.static_url_path or '')
     return u
 
 
@@ -61,7 +63,8 @@ def _gather_files(app, hidden):
 
     for static_folder, static_url_loc in dirs:
         if not os.path.isdir(static_folder):
-            logger.warning("WARNING - [{0} does not exist]".format(static_folder))
+            logger.warning(
+                "WARNING - [{0} does not exist]".format(static_folder))
         else:
             logger.debug("Checking static folder: {0}".format(static_folder))
         for root, _, files in os.walk(static_folder):
@@ -88,8 +91,9 @@ def _static_folder_path(static_url, static_folder, static_asset):
     # static_asset is not simply a filename because it could be
     # sub-directory then file etc.
     if not static_asset.startswith(static_folder):
-        raise ValueError("{0} startic asset must be under {1} static folder".format(static_asset, 
-                                                                                    static_folder))
+        raise ValueError(
+            "{0} startic asset must be under {1} static folder".format(static_asset,
+                                                                       static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
     return u'{0}/{1}'.format(static_url.rstrip('/'), rel_asset.lstrip('/'))
@@ -100,7 +104,11 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
     """ Writes all the files inside a static folder to S3. """
 
     if logger.level == logging.INFO:
-        files = tqdm(files, desc='Uploading from {0} to {1}'.format(static_url_loc, bucket.name))
+        files = tqdm(
+            files,
+            desc='Uploading from {0} to {1}'.format(
+                static_url_loc,
+                bucket.name))
 
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
@@ -206,7 +214,10 @@ def create_all(app, user=None, password=None, bucket_name=None,
     # build list of static files
     all_files = _gather_files(app, include_hidden)
     for (static_folder, static_url_loc), files in all_files.iteritems():
-        logger.debug('{0} valid files in folder "{1}" with local url "{2}"'.format(len(files), static_folder, static_url_loc))
+        logger.debug(
+            '{0} valid files in folder "{1}" with local url "{2}"'.format(len(files),
+                                                                          static_folder,
+                                                                          static_url_loc))
     # connect to s3
     conn = S3Connection(user, password)
     # get_or_create bucket
