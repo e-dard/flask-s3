@@ -220,7 +220,8 @@ class FlaskS3(object):
                     ('S3_BUCKET_DOMAIN', 's3.amazonaws.com'),
                     ('S3_CDN_DOMAIN', ''),
                     ('S3_USE_CACHE_CONTROL', False),
-                    ('S3_HEADERS', {})]
+                    ('S3_HEADERS', {}),
+                    ('S3_URL_STYLE', 'host')]
 
         for k, v in defaults:
             app.config.setdefault(k, v)
