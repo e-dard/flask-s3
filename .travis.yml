@@ -3,4 +3,13 @@ python:
   - "2.6"
   - "2.7"
   - "pypy"
-script: python setup.py test
+
+install:
+  - pip install .
+  - pip install -r requirements.txt
+  - pip install -r requirements-test.txt
+  
+script: nosetests --with-coverage --cover-erase --cover-package=flask_s3 --cover-html
+
+after_success:
+  coveralls

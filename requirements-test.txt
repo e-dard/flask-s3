@@ -1,2 +1,4 @@
 mock
-nose2
+nose
+coverage
+coveralls
