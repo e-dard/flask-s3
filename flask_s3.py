@@ -33,8 +33,20 @@ def url_for(endpoint, **values):
         scheme = 'http'
         if app.config['S3_USE_HTTPS']:
             scheme = 'https'
-        bucket_path = '%s.%s' % (app.config['S3_BUCKET_NAME'],
-                                 app.config['S3_BUCKET_DOMAIN'])
+
+        if app.config['S3_URL_STYLE'] == 'host':
+            url_format = '%(bucket_name)s.%(bucket_domain)s'
+        elif app.config['S3_URL_STYLE'] == 'path':
+            url_format = '%(bucket_domain)s/%(bucket_name)s'
+        else:
+            raise ValueError('Invalid S3 URL style: "%s"'
+                             % app.config['S3_URL_STYLE'])
+
+        bucket_path = url_format % {
+            'bucket_name': app.config['S3_BUCKET_NAME'],
+            'bucket_domain': app.config['S3_BUCKET_DOMAIN'],
+        }
+
         if app.config['S3_CDN_DOMAIN']:
             bucket_path = '%s' % app.config['S3_CDN_DOMAIN']
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)

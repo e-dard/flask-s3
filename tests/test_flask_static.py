@@ -122,6 +122,18 @@ class UrlTests(unittest.TestCase):
         exp = 'https://foo.cloudfront.net/static/bah.js'
         self.assertEquals(self.client_get(ufs).data, exp)
 
+    def test_url_for_url_style_path(self):
+        """Tests that the URL returned uses the path style."""
+        self.app.config['S3_URL_STYLE'] = 'path'
+        ufs = "{{url_for('static', filename='bah.js')}}"
+        exp = 'https://s3.amazonaws.com/foo/static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, exp)
+
+    def test_url_for_url_style_invalid(self):
+        """Tests that an exception is raised for invalid URL styles."""
+        self.app.config['S3_URL_STYLE'] = 'balderdash'
+        ufs = "{{url_for('static', filename='bah.js')}}"
+        self.assertRaises(ValueError, self.client_get, ufs)
 
 
 class S3Tests(unittest.TestCase):
