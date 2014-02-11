@@ -13,7 +13,22 @@ except ImportError:
     import unittest
 
 
-class TestStatic(unittest.TestCase):
+class BaseTestCase(unittest.TestCase):
+
+    def assertIn(self, member, container, msg=None):
+        if hasattr(unittest.TestCase, 'assertIn'):
+            return unittest.TestCase.assertIn(self, member, container, msg)
+
+        return self.assertTrue(member in container)
+
+
+    def assertLessEqual(self, a, b, msg=None):
+        if hasattr(unittest.TestCase, 'assertIn'):
+            return unittest.TestCase.assertLessEqual(self, a, b, msg)
+
+        return self.assertTrue(a <= b)
+
+class TestStatic(BaseTestCase):
 
     def setUp(self):
         self.app = Flask(__name__)
@@ -42,7 +57,7 @@ class TestStatic(unittest.TestCase):
             self.assertIn(default, self.app.config)
 
 
-class TestUrls(unittest.TestCase):
+class TestUrls(BaseTestCase):
 
     def setUp(self):
         self.app = Flask(__name__)
@@ -130,7 +145,7 @@ class TestUrls(unittest.TestCase):
         self.assertEquals(self.client_get(ufs).data, exp)
 
 
-class TestS3(unittest.TestCase):
+class TestS3(BaseTestCase):
 
     def setUp(self):
         self.app = Flask(__name__)
