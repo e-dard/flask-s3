@@ -9,7 +9,11 @@ install:
   - pip install -r requirements.txt
   - pip install -r requirements-test.txt
   
-script: nosetests --with-coverage --cover-erase --cover-package=flask_s3 --cover-html
+script:
+  - coverage run --source=flask_s3.py setup.py test
+  - coverage report -m
 
-after_success:
-  coveralls
+after_script:
+  coveralls --verbose
+
+  

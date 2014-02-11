@@ -47,7 +47,7 @@ setup(
         'Boto>=2.5.2',
         'tqdm'
     ],
-    tests_require=['nose2', 'mock'],
+    tests_require=['nose', 'mock'],
     test_suite='nose.collector',
     classifiers=[
         'Environment :: Web Environment',
