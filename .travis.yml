@@ -1,7 +1,19 @@
 language: python
 python:
+  - "2.6"
   - "2.7"
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: pip install -r docs/requirements.txt --use-mirrors
-# command to run tests, e.g. python setup.py test
-script: nosetests
+  - "pypy"
+
+install:
+  - pip install .
+  - pip install -r requirements.txt
+  - pip install -r requirements-test.txt
+  
+script:
+  - coverage run --source=flask_s3.py setup.py test
+  - coverage report -m
+
+after_script:
+  coveralls --verbose
+
+  
