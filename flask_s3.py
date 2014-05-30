@@ -129,7 +129,7 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
 
         if ex_keys and key_name in ex_keys or exclude:
             logger.debug("%s excluded from upload" % key_name)
-        elif:
+        else:
             k = Key(bucket=bucket, name=key_name)
             # Set custom headers
             for header, value in app.config['S3_HEADERS'].iteritems():
