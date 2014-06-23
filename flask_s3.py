@@ -101,7 +101,7 @@ def _static_folder_path(static_url, static_folder, static_asset):
     # static_asset is not simply a filename because it could be 
     # sub-directory then file etc.
     if not static_asset.startswith(static_folder):
-        raise ValueError("%s startic asset must be under %s static folder" %
+        raise ValueError("%s static asset must be under %s static folder" %
                          (static_asset, static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
