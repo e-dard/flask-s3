@@ -1,14 +1,29 @@
 import os
 import logging
+import hashlib
+import json
 from collections import defaultdict
 
 from flask import url_for as flask_url_for
 from flask import current_app
 from boto.s3.connection import S3Connection
-from boto.exception import S3CreateError
+from boto.exception import S3CreateError, S3ResponseError
 from boto.s3.key import Key
 
 logger = logging.getLogger('flask_s3')
+
+def hash_file(filename):
+    """
+    Generate a hash for the contents of a file
+    """
+    hasher = hashlib.sha1()
+    with open(filename, 'rb') as f:
+        buf = f.read(65536)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = f.read(65536)
+
+    return hasher.hexdigest()
 
 
 def url_for(endpoint, **values):
@@ -86,7 +101,7 @@ def _static_folder_path(static_url, static_folder, static_asset):
     # static_asset is not simply a filename because it could be 
     # sub-directory then file etc.
     if not static_asset.startswith(static_folder):
-        raise ValueError("%s startic asset must be under %s static folder" %
+        raise ValueError("%s static asset must be under %s static folder" %
                          (static_asset, static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
@@ -94,15 +109,25 @@ def _static_folder_path(static_url, static_folder, static_asset):
 
 
 def _write_files(app, static_url_loc, static_folder, files, bucket,
-                 ex_keys=None):
+                 ex_keys=None, hashes=None):
     """ Writes all the files inside a static folder to S3. """
+    new_hashes = []
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
         key_name = _static_folder_path(static_url_loc, static_folder,
                                        asset_loc)
         msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
-        if ex_keys and key_name in ex_keys:
+
+        exclude = False
+        if app.config.get('S3_ONLY_MODIFIED', False):
+            file_hash = hash_file(file_path)
+            new_hashes.append((key_name, file_hash))
+
+            if hashes and hashes.get(key_name, None) == file_hash:
+                exclude = True
+
+        if ex_keys and key_name in ex_keys or exclude:
             logger.debug("%s excluded from upload" % key_name)
         else:
             k = Key(bucket=bucket, name=key_name)
@@ -112,10 +137,15 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
             k.set_contents_from_filename(file_path)
             k.make_public()
 
+    return new_hashes
 
-def _upload_files(app, files_, bucket):
+
+def _upload_files(app, files_, bucket, hashes=None):
+    new_hashes = []
     for (static_folder, static_url), names in files_.iteritems():
-        _write_files(app, static_url, static_folder, names, bucket)
+        new_hashes.extend(_write_files(app, static_url, static_folder, names,
+            bucket, hashes=hashes))
+    return new_hashes
 
 
 def create_all(app, user=None, password=None, bucket_name=None,
@@ -192,10 +222,27 @@ def create_all(app, user=None, password=None, bucket_name=None,
             else:
                 raise e
 
-        bucket.make_public(recursive=True)
+        bucket.make_public(recursive=False)
     except S3CreateError as e:
         raise e
-    _upload_files(app, all_files, bucket)
+
+    if app.config['S3_ONLY_MODIFIED']:
+        try:
+            hashes = json.loads(Key(bucket=bucket,
+                name=".file-hashes").get_contents_as_string())
+        except S3ResponseError as e:
+            logger.warn("No file hashes found: %s" % e)
+            hashes = None
+
+        new_hashes = _upload_files(app, all_files, bucket, hashes=hashes)
+
+        try:
+            k = Key(bucket=bucket, name=".file-hashes")
+            k.set_contents_from_string(json.dumps(dict(new_hashes)))
+        except S3ResponseError as e:
+            logger.warn("Unable to upload file hashes: %s" % e)
+    else:
+        _upload_files(app, all_files, bucket)
 
 
 class FlaskS3(object):
@@ -227,7 +274,8 @@ class FlaskS3(object):
                     ('S3_BUCKET_DOMAIN', 's3.amazonaws.com'),
                     ('S3_CDN_DOMAIN', ''),
                     ('S3_USE_CACHE_CONTROL', False),
-                    ('S3_HEADERS', {})]
+                    ('S3_HEADERS', {}),
+                    ('S3_ONLY_MODIFIED', False)]
 
         for k, v in defaults:
             app.config.setdefault(k, v)

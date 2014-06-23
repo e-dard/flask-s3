@@ -1,5 +1,8 @@
 import unittest
 import ntpath
+import tempfile
+import os.path
+import os
 
 from mock import Mock, patch, call
 from flask import Flask, render_template_string, Blueprint
@@ -135,6 +138,7 @@ class S3Tests(unittest.TestCase):
             'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
             'Content-Encoding': 'gzip',
         }
+        self.app.config['S3_ONLY_MODIFIED'] = False
 
     def test__bp_static_url(self):
         """ Tests test__bp_static_url """
@@ -233,6 +237,54 @@ class S3Tests(unittest.TestCase):
         flask_s3._write_files(self.app, static_url_loc, static_folder, assets,
                               None, exclude)
         self.assertLessEqual(expected, key_mock.mock_calls)
+
+    @patch('flask_s3.Key')
+    def test__write_only_modified(self, key_mock):
+        """ Test that we only upload files that have changed """
+        self.app.config['S3_ONLY_MODIFIED'] = True
+        static_folder = tempfile.mkdtemp()
+        static_url_loc = static_folder
+        filenames = [os.path.join(static_folder, f) for f in ['foo.css', 'bar.css']]
+        expected = []
+
+
+        for filename in filenames:
+            # Write random data into files
+            with open(filename, 'wb') as f:
+                f.write(os.urandom(1024))
+
+            # We expect each file to be uploaded
+            expected.extend([call(bucket=None, name=filename),
+                             call().set_metadata('Expires', 
+                                 'Thu, 31 Dec 2037 23:59:59 GMT'),
+                             call().set_metadata('Content-Encoding', 'gzip'),
+                             call().set_contents_from_filename(filename),
+                             call().make_public()])
+
+        files = {(static_url_loc, static_folder): filenames}
+
+        hashes = flask_s3._upload_files(self.app, files, None)
+
+        # All files are uploaded and hashes are returned
+        self.assertLessEqual(expected, key_mock.mock_calls)
+        self.assertEquals(len(hashes), len(filenames))
+
+        # We now modify the second file
+        with open(filenames[1], 'wb') as f:
+            f.write(os.urandom(1024))
+
+        # We expect only this file to be uploaded
+        expected.extend([call(bucket=None, name=filenames[1]),
+                         call().set_metadata('Expires', 
+                             'Thu, 31 Dec 2037 23:59:59 GMT'),
+                         call().set_metadata('Content-Encoding', 'gzip'),
+                         call().set_contents_from_filename(filenames[1]),
+                         call().make_public()])
+
+        new_hashes = flask_s3._upload_files(self.app, files, None,
+                hashes=dict(hashes))
+
+        self.assertEqual(expected, key_mock.mock_calls)
 
     def test_static_folder_path(self):
         """ Tests _static_folder_path """
