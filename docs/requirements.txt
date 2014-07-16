@@ -1,5 +1,5 @@
 Flask==0.9
 Jinja2==2.6
 Werkzeug==0.8.3
-boto==2.5.2
+boto==2.29.1
 wsgiref==0.1.2
