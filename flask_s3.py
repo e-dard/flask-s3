@@ -7,6 +7,7 @@ from collections import defaultdict
 from flask import url_for as flask_url_for
 from flask import current_app
 from boto.s3.connection import S3Connection
+from boto.s3 import connect_to_region
 from boto.exception import S3CreateError, S3ResponseError
 from boto.s3.key import Key
 
@@ -200,22 +201,29 @@ def create_all(app, user=None, password=None, bucket_name=None,
     /latest/dev/BucketRestrictions.html
 
     """
-    if user is None and 'AWS_ACCESS_KEY_ID' in app.config:
-        user = app.config['AWS_ACCESS_KEY_ID']
-    if password is None and 'AWS_SECRET_ACCESS_KEY' in app.config:
-        password = app.config['AWS_SECRET_ACCESS_KEY']
-    if bucket_name is None and 'S3_BUCKET_NAME' in app.config:
-        bucket_name = app.config['S3_BUCKET_NAME']
+    user = user or app.config.get('AWS_ACCESS_KEY_ID')
+    password = password or app.config.get('AWS_SECRET_ACCESS_KEY')
+    bucket_name = bucket_name or app.config.get('S3_BUCKET_NAME')
     if not bucket_name:
         raise ValueError("No bucket name provided.")
+    location = location or app.config.get('S3_REGION')
+
     # build list of static files
     all_files = _gather_files(app, include_hidden)
     logger.debug("All valid files: %s" % all_files)
-    conn = S3Connection(user, password) # connect to s3
+
+    # connect to s3
+    if not location:
+        conn = S3Connection(user, password)  # (default region)
+    else:
+        conn = connect_to_region(location,
+                                 aws_access_key_id=user,
+                                 aws_secret_access_key=password)
+
     # get_or_create bucket
     try:
         try:
-            bucket = conn.create_bucket(bucket_name, location=location)
+            bucket = conn.create_bucket(bucket_name)
         except S3CreateError as e:
             if e.error_code == u'BucketAlreadyOwnedByYou':
                 bucket = conn.get_bucket(bucket_name)
