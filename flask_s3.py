@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import logging
 import hashlib
@@ -61,15 +63,15 @@ def url_for(endpoint, **values):
 
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
-    u = u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
+    u = '%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
     return u
 
 
 def _gather_files(app, hidden):
     """ Gets all files in static folders and returns in dict."""
-    dirs = [(unicode(app.static_folder), app.static_url_path)]
+    dirs = [(str(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
-        blueprints = app.blueprints.values()
+        blueprints = list(app.blueprints.values())
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
         dirs.extend([bp_details(x) for x in blueprints if x.static_folder])
 
@@ -107,7 +109,7 @@ def _static_folder_path(static_url, static_folder, static_asset):
                          (static_asset, static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
-    return u'%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
+    return '%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
 
 
 def _write_files(app, static_url_loc, static_folder, files, bucket,
@@ -134,7 +136,7 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
         else:
             k = Key(bucket=bucket, name=key_name)
             # Set custom headers
-            for header, value in app.config['S3_HEADERS'].iteritems():
+            for header, value in app.config['S3_HEADERS'].items():
                 k.set_metadata(header, value)
             k.set_contents_from_filename(file_path)
             k.make_public()
@@ -144,7 +146,7 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
 
 def _upload_files(app, files_, bucket, hashes=None):
     new_hashes = []
-    for (static_folder, static_url), names in files_.iteritems():
+    for (static_folder, static_url), names in files_.items():
         new_hashes.extend(_write_files(app, static_url, static_folder, names,
                                        bucket, hashes=hashes))
     return new_hashes
@@ -226,7 +228,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
         try:
             bucket = conn.create_bucket(bucket_name)
         except S3CreateError as e:
-            if e.error_code == u'BucketAlreadyOwnedByYou':
+            if e.error_code == 'BucketAlreadyOwnedByYou':
                 bucket = conn.get_bucket(bucket_name)
             else:
                 raise e
