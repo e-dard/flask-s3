@@ -241,7 +241,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
         try:
             hashes = json.loads(
                 Key(bucket=bucket,
-                    name=".file-hashes").get_contents_as_string())
+                    name=".file-hashes").get_contents_as_string().decode('utf-8'))
         except S3ResponseError as e:
             logger.warn("No file hashes found: %s" % e)
             hashes = None
