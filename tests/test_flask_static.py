@@ -5,7 +5,7 @@ import os.path
 import os
 
 from mock import Mock, patch, call
-from flask import Flask, render_template_string, Blueprint
+from flask import Flask, render_template_string, Blueprint, url_for
 
 import flask_s3
 from flask_s3 import FlaskS3
@@ -124,6 +124,42 @@ class UrlTests(unittest.TestCase):
         exp = 'https://foo.cloudfront.net/static/bah.js'
         self.assertEquals(self.client_get(ufs).data, exp)
 
+    def test_url_with_hash(self):
+        self.app.config['S3_CACHE_BUSTING'] = True
+
+        static_folder = tempfile.mkdtemp()
+        self.app.static_folder = static_folder
+
+        static_url_loc = static_folder
+        filename = os.path.join(static_folder, "foo.png")
+
+        # Write random data into file
+        with open(filename, 'wb') as f:
+            f.write(os.urandom(1024))
+
+        with self.app.test_request_context("/"):
+            ufs = "{{url_for('static', filename='foo.png')}}"
+            exp = "https://foo.s3.amazonaws.com/static/foo.png"
+            url = self.client_get(ufs).data
+
+            self.assertTrue(url.startswith(exp))
+            # We have a query string
+            self.assertTrue("?" in url) 
+
+            again = self.client_get(ufs).data
+
+            # We get the same query string when fetching the same file
+            self.assertEquals(again, url)
+
+            # Change the contents of the file
+            with open(filename, 'wb') as f:
+                f.write(os.urandom(1025))
+
+            # Clear hashes (would be done on restart)
+            flask_s3.file_hashes = {}
+
+            changed = self.client_get(ufs).data
+            self.assertNotEquals(url, changed)
 
 
 class S3Tests(unittest.TestCase):
