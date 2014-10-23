@@ -213,6 +213,10 @@ uploading assets to S3.
                             upload to S3. SHA-1 file hashes are used to compute
                             file changes. You can delete `.file-hashes` from 
                             your S3 bucket to force all files to upload again.
+`S3_CACHE_BUSTING`          Append a query string with a file hash to all static URLs
+                            to force a fetch when file contents change. This is
+                            useful when used with long expiry headers while
+                            still retaining the ability to change static files.
 `S3_CACHE_CONTROL`          **Deprecated**. Please use `S3_HEADERS` instead.
 `S3_USE_CACHE_CONTROL`      **Deprecated**. Please use `S3_HEADERS` instead.
 =========================== ===================================================
