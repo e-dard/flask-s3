@@ -5,13 +5,16 @@ import json
 from collections import defaultdict
 
 from flask import url_for as flask_url_for
-from flask import current_app
+from flask import current_app, request
 from boto.s3.connection import S3Connection
 from boto.s3 import connect_to_region
 from boto.exception import S3CreateError, S3ResponseError
 from boto.s3.key import Key
 
 logger = logging.getLogger('flask_s3')
+
+
+file_hashes = {}
 
 
 def hash_file(filename):
@@ -55,7 +58,34 @@ def url_for(endpoint, **values):
         if app.config['S3_CDN_DOMAIN']:
             bucket_path = '%s' % app.config['S3_CDN_DOMAIN']
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
-        return urls.build(endpoint, values=values, force_external=True)
+        url = urls.build(endpoint, values=values, force_external=True)
+
+        if app.config.get('S3_CACHE_BUSTING', False):
+            # We maintain a dictionary of file hashes to use as query parameters
+            # after filenames to force a cache miss when the files contents have
+            # changed. These hashes are calculated once per server restart when
+            # the file is first fetched
+
+            if url not in file_hashes:
+                filename = values['filename']
+                blueprints = app.blueprints.values()
+
+                if endpoint == 'static':
+                    filename = os.path.join(app.static_folder, filename)
+                else:
+                    for blueprint in blueprints:
+                        if endpoint == "{}.static".format(blueprint.name):
+                            filename = os.path.join(blueprint.static_folder,
+                                    filename)
+
+                if os.path.exists(filename):
+                    file_hashes[url] = hash_file(filename)
+
+            file_hash = file_hashes.get(url, None)
+            if file_hash and "?" not in url:
+                return "{}?{}".format(url, file_hash[-6:])
+
+        return url
     return flask_url_for(endpoint, **values)
 
 
@@ -285,7 +315,8 @@ class FlaskS3(object):
                     ('S3_CDN_DOMAIN', ''),
                     ('S3_USE_CACHE_CONTROL', False),
                     ('S3_HEADERS', {}),
-                    ('S3_ONLY_MODIFIED', False)]
+                    ('S3_ONLY_MODIFIED', False),
+                    ('S3_CACH_BUSTING', False)]
 
         for k, v in defaults:
             app.config.setdefault(k, v)
