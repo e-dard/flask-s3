@@ -126,9 +126,10 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
                  ex_keys=None, hashes=None):
     """ Writes all the files inside a static folder to S3. """
     new_hashes = []
+    static_folder_rel = _path_to_relative_url(static_folder)
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
-        key_name = _static_folder_path(static_url_loc, static_folder,
+        key_name = _static_folder_path(static_url_loc, static_folder_rel,
                                        asset_loc)
         msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
