@@ -93,15 +93,19 @@ def _gather_files(app, hidden, filepath_filter_regex=None):
         else:
             logger.debug("Checking static folder: %s" % static_folder)
         for root, _, files in os.walk(static_folder):
-            relative_folder = root.replace(static_folder, '')
-            # Skip this folder if the filter regex is defined, and
-            # this folder's path is a negative match.
-            if (filepath_filter_regex != None and
-                    not re.search(filepath_filter_regex, relative_folder)):
-                continue
+            relative_folder = re.sub(r'^\/',
+                                     '',
+                                     root.replace(static_folder, ''))
 
             files = [os.path.join(root, x) \
-                     for x in files if hidden or x[0] != '.']
+                     for x in files if (
+                         (hidden or x[0] != '.') and
+                         # Skip this file if the filter regex is
+                         # defined, and this file's path is a
+                         # negative match.
+                         (filepath_filter_regex == None or re.search(
+                             filepath_filter_regex,
+                             os.path.join(relative_folder, x))))]
             if files:
                 valid_files[(static_folder, static_url_loc)].extend(files)
     return valid_files
@@ -224,7 +228,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
         static assets is limited to only those files whose relative path
         matches this regular expression string. For example, to only
         upload files within the 'css' directory of your app's static
-        store, set to r'^\/css'.
+        store, set to r'^css'.
     :type filepath_filter_regex: `basestring` or None
 
     .. _bucket restrictions: http://docs.amazonwebservices.com/AmazonS3\
