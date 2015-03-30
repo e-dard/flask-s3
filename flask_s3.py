@@ -2,6 +2,7 @@ import os
 import logging
 import hashlib
 import json
+import re
 from collections import defaultdict
 
 from flask import url_for as flask_url_for
@@ -77,7 +78,7 @@ def _bp_static_url(blueprint):
     return u
 
 
-def _gather_files(app, hidden):
+def _gather_files(app, hidden, filepath_filter_regex=None):
     """ Gets all files in static folders and returns in dict."""
     dirs = [(unicode(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
@@ -92,6 +93,13 @@ def _gather_files(app, hidden):
         else:
             logger.debug("Checking static folder: %s" % static_folder)
         for root, _, files in os.walk(static_folder):
+            relative_folder = root.replace(static_folder, '')
+            # Skip this folder if the filter regex is defined, and
+            # this folder's path is a negative match.
+            if (filepath_filter_regex != None and
+                    not re.search(filepath_filter_regex, relative_folder)):
+                continue
+
             files = [os.path.join(root, x) \
                      for x in files if hidden or x[0] != '.']
             if files:
@@ -164,7 +172,8 @@ def _upload_files(app, files_, bucket, hashes=None):
 
 
 def create_all(app, user=None, password=None, bucket_name=None,
-               location=None, include_hidden=False):
+               location=None, include_hidden=False,
+               filepath_filter_regex=None):
     """
     Uploads of the static assets associated with a Flask application to
     Amazon S3.
@@ -211,6 +220,13 @@ def create_all(app, user=None, password=None, bucket_name=None,
         files. Set this to true to force the upload of hidden files.
     :type include_hidden: `bool`
 
+    :param filepath_filter_regex: if specified, then the upload of
+        static assets is limited to only those files whose relative path
+        matches this regular expression string. For example, to only
+        upload files within the 'css' directory of your app's static
+        store, set to r'^\/css'.
+    :type filepath_filter_regex: `basestring` or None
+
     .. _bucket restrictions: http://docs.amazonwebservices.com/AmazonS3\
     /latest/dev/BucketRestrictions.html
 
@@ -223,7 +239,8 @@ def create_all(app, user=None, password=None, bucket_name=None,
     location = location or app.config.get('S3_REGION')
 
     # build list of static files
-    all_files = _gather_files(app, include_hidden)
+    all_files = _gather_files(app, include_hidden,
+                              filepath_filter_regex=filepath_filter_regex)
     logger.debug("All valid files: %s" % all_files)
 
     # connect to s3
