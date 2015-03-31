@@ -215,10 +215,12 @@ uploading assets to S3.
 `S3_HEADERS`                Sets custom headers to be sent with each file to S3.
                             **Default:** `{}`
 `S3_FILEPATH_HEADERS`       Sets custom headers for files whose filepath matches
-                            certain regular expressions. E.g. to add CORS
-                            headers for font files, set this to:
-                            `{r'\.(ttf|woff|woff2|svg|eot)$':`
-                            `    {'Access-Control-Allow-Origin': '*'}`
+                            certain regular expressions. (Note that this cannot
+                            be used for CORS, that must be set per S3 bucket
+                            using an XML config string.) E.g. to add custom
+                            metadata when serving text files, set this to:
+                            `{r'\.txt$':`
+                            `    {'Texted-Up-By': 'Mister Foo'}`
                             `}`
                             **Default:** `{}`
 `S3_ONLY_MODIFIED`          Only upload files that have been modified since last
