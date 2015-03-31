@@ -146,9 +146,20 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
             logger.debug("%s excluded from upload" % key_name)
         else:
             k = Key(bucket=bucket, name=key_name)
+
             # Set custom headers
             for header, value in app.config['S3_HEADERS'].iteritems():
                 k.set_metadata(header, value)
+
+            # Set more custom headers if the filepath matches certain
+            # configured regular expressions.
+            filepath_headers = app.config['S3_FILEPATH_HEADERS']
+            if filepath_headers:
+                for filepath_regex, headers in filepath_headers.iteritems():
+                    if re.search(filepath_regex, file_path):
+                        for header, value in headers.iteritems():
+                            k.set_metadata(header, value)
+
             k.set_contents_from_filename(file_path)
             k.make_public()
 
@@ -298,6 +309,7 @@ class FlaskS3(object):
                     ('S3_CDN_DOMAIN', ''),
                     ('S3_USE_CACHE_CONTROL', False),
                     ('S3_HEADERS', {}),
+                    ('S3_FILEPATH_HEADERS', {}),
                     ('S3_ONLY_MODIFIED', False),
                     ('S3_URL_STYLE', 'host')]
 

@@ -214,9 +214,16 @@ uploading assets to S3.
                             specified by `flask.url_for`.
 `S3_HEADERS`                Sets custom headers to be sent with each file to S3.
                             **Default:** `{}`
+`S3_FILEPATH_HEADERS`       Sets custom headers for files whose filepath matches
+                            certain regular expressions. E.g. to add CORS
+                            headers for font files, set this to:
+                            `{r'\.(ttf|woff|woff2|svg|eot)$':`
+                            `    {'Access-Control-Allow-Origin': '*'}`
+                            `}`
+                            **Default:** `{}`
 `S3_ONLY_MODIFIED`          Only upload files that have been modified since last
                             upload to S3. SHA-1 file hashes are used to compute
-                            file changes. You can delete `.file-hashes` from 
+                            file changes. You can delete `.file-hashes` from
                             your S3 bucket to force all files to upload again.
 `S3_CACHE_CONTROL`          **Deprecated**. Please use `S3_HEADERS` instead.
 `S3_USE_CACHE_CONTROL`      **Deprecated**. Please use `S3_HEADERS` instead.
