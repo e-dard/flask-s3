@@ -148,12 +148,14 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
             k = Key(bucket=bucket, name=key_name)
 
             # Set custom headers
-            for header, value in app.config['S3_HEADERS'].iteritems():
-                k.set_metadata(header, value)
+            headers = app.config.get('S3_HEADERS')
+            if headers:
+                for header, value in headers.iteritems():
+                    k.set_metadata(header, value)
 
             # Set more custom headers if the filepath matches certain
             # configured regular expressions.
-            filepath_headers = app.config['S3_FILEPATH_HEADERS']
+            filepath_headers = app.config.get('S3_FILEPATH_HEADERS')
             if filepath_headers:
                 for filepath_regex, headers in filepath_headers.iteritems():
                     if re.search(filepath_regex, file_path):
