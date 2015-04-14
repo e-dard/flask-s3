@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from flask import url_for as flask_url_for
 from flask import current_app
+from flask import _request_ctx_stack, request
 from boto.s3.connection import S3Connection
 from boto.s3 import connect_to_region
 from boto.exception import S3CreateError, S3ResponseError
@@ -26,6 +27,33 @@ def hash_file(filename):
             buf = f.read(65536)
 
     return hasher.hexdigest()
+
+
+def support_relative_endpoints(endpoint):
+    """Copied from Flask's url_for().
+    """
+    reqctx = _request_ctx_stack.top
+
+    # If request specific information is available we have some extra
+    # features that support "relative" URLs.
+    if reqctx is not None:
+        url_adapter = reqctx.url_adapter
+        blueprint_name = request.blueprint
+        if not reqctx.request._is_old_module:
+            if endpoint[:1] == '.':
+                if blueprint_name is not None:
+                    endpoint = blueprint_name + endpoint
+                else:
+                    endpoint = endpoint[1:]
+        else:
+            # TODO: get rid of this deprecated functionality in 1.0
+            if '.' not in endpoint:
+                if blueprint_name is not None:
+                    endpoint = blueprint_name + '.' + endpoint
+            elif endpoint.startswith('.'):
+                endpoint = endpoint[1:]
+
+    return endpoint
 
 
 def url_for(endpoint, **values):
@@ -67,6 +95,7 @@ def url_for(endpoint, **values):
         if app.config['S3_CDN_DOMAIN']:
             bucket_path = '%s' % app.config['S3_CDN_DOMAIN']
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
+        endpoint = support_relative_endpoints(endpoint)
         return urls.build(endpoint, values=values, force_external=True)
     return flask_url_for(endpoint, **values)
 
