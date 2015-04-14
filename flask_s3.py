@@ -92,7 +92,7 @@ def _gather_files(app, hidden):
         else:
             logger.debug("Checking static folder: %s" % static_folder)
         for root, _, files in os.walk(static_folder):
-            files = [os.path.join(root, x) \
+            files = [os.path.join(root, x).decode('utf-8') \
                      for x in files if hidden or x[0] != '.']
             if files:
                 valid_files[(static_folder, static_url_loc)].extend(files)
@@ -131,7 +131,7 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
         asset_loc = _path_to_relative_url(file_path)
         key_name = _static_folder_path(static_url_loc, static_folder_rel,
                                        asset_loc)
-        msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
+        msg = u"Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
 
         exclude = False
