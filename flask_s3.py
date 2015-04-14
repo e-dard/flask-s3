@@ -237,7 +237,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
     # get_or_create bucket
     try:
         try:
-            bucket = conn.create_bucket(bucket_name)
+            bucket = conn.create_bucket(bucket_name, location=location)
         except S3CreateError as e:
             if e.error_code == u'BucketAlreadyOwnedByYou':
                 bucket = conn.get_bucket(bucket_name)
