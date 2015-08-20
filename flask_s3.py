@@ -128,20 +128,21 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
     static_folder_rel = _path_to_relative_url(static_folder)
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
-        key_name = _static_folder_path(static_url_loc, static_folder_rel,
-                                       asset_loc).lstrip("/")
+        full_key_name = _static_folder_path(static_url_loc, static_folder_rel,
+                                       asset_loc)
+        key_name = full_key_name.lstrip("/")
         msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
 
         exclude = False
         if app.config.get('S3_ONLY_MODIFIED', False):
             file_hash = hash_file(file_path)
-            new_hashes.append((key_name, file_hash))
+            new_hashes.append((full_key_name, file_hash))
 
-            if hashes and hashes.get(key_name, None) == file_hash:
+            if hashes and hashes.get(full_key_name, None) == file_hash:
                 exclude = True
 
-        if ex_keys and key_name in ex_keys or exclude:
+        if ex_keys and full_key_name in ex_keys or exclude:
             logger.debug("%s excluded from upload" % key_name)
         else:
             with open(file_path) as fp:
