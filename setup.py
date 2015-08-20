@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name='Flask-S3',
-    version='0.1.7',
+    version='0.2.0',
     url='http://github.com/e-dard/flask-s3',
     license='WTFPL',
     author='Edward Robinson',
@@ -22,7 +22,7 @@ setup(
     platforms='any',
     install_requires=[
         'Flask',
-        'Boto>=2.5.2'
+        'Boto3>=1.1.1'
     ],
     tests_require=['nose', 'mock'],
     classifiers=[

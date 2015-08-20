@@ -4,12 +4,11 @@ import hashlib
 import json
 from collections import defaultdict
 
+import boto3
+import boto3.exceptions
+from botocore.exceptions import ClientError
 from flask import url_for as flask_url_for
 from flask import current_app
-from boto.s3.connection import S3Connection
-from boto.s3 import connect_to_region
-from boto.exception import S3CreateError, S3ResponseError
-from boto.s3.key import Key
 
 logger = logging.getLogger('flask_s3')
 
@@ -122,7 +121,7 @@ def _static_folder_path(static_url, static_folder, static_asset):
     return u'%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
 
 
-def _write_files(app, static_url_loc, static_folder, files, bucket,
+def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                  ex_keys=None, hashes=None):
     """ Writes all the files inside a static folder to S3. """
     new_hashes = []
@@ -130,7 +129,7 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
         key_name = _static_folder_path(static_url_loc, static_folder_rel,
-                                       asset_loc)
+                                       asset_loc).lstrip("/")
         msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
 
@@ -145,20 +144,20 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
         if ex_keys and key_name in ex_keys or exclude:
             logger.debug("%s excluded from upload" % key_name)
         else:
-            k = Key(bucket=bucket, name=key_name)
-            # Set custom headers
-            for header, value in app.config['S3_HEADERS'].iteritems():
-                k.set_metadata(header, value)
-            k.set_contents_from_filename(file_path)
-            k.make_public()
+            with open(file_path) as fp:
+                s3.put_object(Bucket=bucket,
+                              Key=key_name,
+                              Body=fp.read(),
+                              ACL="public-read",
+                              Metadata=app.config['S3_HEADERS'])
 
     return new_hashes
 
 
-def _upload_files(app, files_, bucket, hashes=None):
+def _upload_files(s3, app, files_, bucket, hashes=None):
     new_hashes = []
     for (static_folder, static_url), names in files_.iteritems():
-        new_hashes.extend(_write_files(app, static_url, static_folder, names,
+        new_hashes.extend(_write_files(s3, app, static_url, static_folder, names,
                                        bucket, hashes=hashes))
     return new_hashes
 
@@ -227,45 +226,42 @@ def create_all(app, user=None, password=None, bucket_name=None,
     logger.debug("All valid files: %s" % all_files)
 
     # connect to s3
-    if not location:
-        conn = S3Connection(user, password)  # (default region)
-    else:
-        conn = connect_to_region(location,
-                                 aws_access_key_id=user,
-                                 aws_secret_access_key=password)
+    s3 = boto3.client("s3",
+                      region_name=location or None,
+                      aws_access_key_id=user,
+                      aws_secret_access_key=password)
 
     # get_or_create bucket
     try:
-        try:
-            bucket = conn.create_bucket(bucket_name)
-        except S3CreateError as e:
-            if e.error_code == u'BucketAlreadyOwnedByYou':
-                bucket = conn.get_bucket(bucket_name)
-            else:
-                raise e
+        s3.head_bucket(Bucket=bucket_name)
+    except ClientError as e:
+        if int(e.response['Error']['Code']) == 404:
+            # Create the bucket
+            bucket = s3.create_bucket(Bucket=bucket_name)
+        else:
+            raise
 
-        bucket.make_public(recursive=False)
-    except S3CreateError as e:
-        raise e
+    s3.put_bucket_acl(Bucket=bucket_name, ACL='public-read')
 
     if app.config['S3_ONLY_MODIFIED']:
         try:
-            hashes = json.loads(
-                Key(bucket=bucket,
-                    name=".file-hashes").get_contents_as_string())
-        except S3ResponseError as e:
+            hashes_object = s3.get_object(Bucket=bucket_name, Key='.file-hashes')
+            hashes = json.loads(str(hashes_object['Body'].read()))
+        except ClientError as e:
             logger.warn("No file hashes found: %s" % e)
             hashes = None
 
-        new_hashes = _upload_files(app, all_files, bucket, hashes=hashes)
+        new_hashes = _upload_files(s3, app, all_files, bucket_name, hashes=hashes)
 
         try:
-            k = Key(bucket=bucket, name=".file-hashes")
-            k.set_contents_from_string(json.dumps(dict(new_hashes)))
-        except S3ResponseError as e:
+            s3.put_object(Bucket=bucket_name,
+                          Key='.file-hashes',
+                          Body=json.dumps(dict(new_hashes)),
+                          ACL='private')
+        except boto3.exceptions.S3UploadFailedError as e:
             logger.warn("Unable to upload file hashes: %s" % e)
     else:
-        _upload_files(app, all_files, bucket)
+        _upload_files(s3, app, all_files, bucket_name)
 
 
 class FlaskS3(object):
@@ -279,6 +275,7 @@ class FlaskS3(object):
     :param app: optional :class:`flask.Flask` application object
     :type app: :class:`flask.Flask` or None
     """
+
     def __init__(self, app=None):
         if app is not None:
             self.init_app(app)

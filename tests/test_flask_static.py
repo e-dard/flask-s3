@@ -1,10 +1,11 @@
 import unittest
 import ntpath
 import tempfile
-import os.path
 import os
 
-from mock import Mock, patch, call
+import pprint
+
+from mock import Mock, patch, call, mock_open
 from flask import Flask, render_template_string, Blueprint
 
 import flask_s3
@@ -15,6 +16,7 @@ class FlaskStaticTest(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
         self.app.testing = True
+
         @self.app.route('/<url_for_string>')
         def a(url_for_string):
             return render_template_string(url_for_string)
@@ -57,11 +59,12 @@ class UrlTests(unittest.TestCase):
             return render_template_string("{{url_for('b')}}")
 
         bp = Blueprint('admin', __name__, static_folder='admin-static')
+
         @bp.route('/<url_for_string>')
         def c():
             return render_template_string("{{url_for('b')}}")
-        self.app.register_blueprint(bp)
 
+        self.app.register_blueprint(bp)
 
     def client_get(self, ufs):
         FlaskS3(self.app)
@@ -140,7 +143,6 @@ class UrlTests(unittest.TestCase):
 
 
 class S3Tests(unittest.TestCase):
-
     def setUp(self):
         self.app = Flask(__name__)
         self.app.testing = True
@@ -234,7 +236,8 @@ class S3Tests(unittest.TestCase):
             actual = flask_s3._path_to_relative_url(in_)
             self.assertEquals(exp, actual)
 
-    @patch('flask_s3.Key')
+    @patch('flask_s3.boto3')
+    @patch('flask_s3.open', mock_open(read_data='test'))
     def test__write_files(self, key_mock):
         """ Tests _write_files """
         static_url_loc = '/foo/static'
@@ -247,11 +250,11 @@ class S3Tests(unittest.TestCase):
                     call().set_metadata('Expires', 'Thu, 31 Dec 2037 23:59:59 GMT'),
                     call().set_metadata('Content-Encoding', 'gzip'),
                     call().set_contents_from_filename('/home/z/bar.css')]
-        flask_s3._write_files(self.app, static_url_loc, static_folder, assets,
+        flask_s3._write_files(key_mock, self.app, static_url_loc, static_folder, assets,
                               None, exclude)
         self.assertLessEqual(expected, key_mock.mock_calls)
 
-    @patch('flask_s3.Key')
+    @patch('flask_s3.boto3')
     def test__write_only_modified(self, key_mock):
         """ Test that we only upload files that have changed """
         self.app.config['S3_ONLY_MODIFIED'] = True
@@ -260,23 +263,31 @@ class S3Tests(unittest.TestCase):
         filenames = [os.path.join(static_folder, f) for f in ['foo.css', 'bar.css']]
         expected = []
 
+        def IntIterator():
+            i = 0
+            while True:
+                i += 1
+                yield i
+
+        data_iter = IntIterator()
 
         for filename in filenames:
             # Write random data into files
             with open(filename, 'wb') as f:
-                f.write(os.urandom(1024))
+                data = str(data_iter.next())
+                f.write(data)
 
             # We expect each file to be uploaded
-            expected.extend([call(bucket=None, name=filename),
-                             call().set_metadata('Expires', 
-                                 'Thu, 31 Dec 2037 23:59:59 GMT'),
-                             call().set_metadata('Content-Encoding', 'gzip'),
-                             call().set_contents_from_filename(filename),
-                             call().make_public()])
+            expected.extend([call.put_object(ACL='public-read',
+                                             Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
+                                                       'Content-Encoding': 'gzip'},
+                                             Bucket=None,
+                                             Key=filename,
+                                             Body=data)])
 
         files = {(static_url_loc, static_folder): filenames}
 
-        hashes = flask_s3._upload_files(self.app, files, None)
+        hashes = flask_s3._upload_files(key_mock, self.app, files, None)
 
         # All files are uploaded and hashes are returned
         self.assertLessEqual(expected, key_mock.mock_calls)
@@ -284,18 +295,19 @@ class S3Tests(unittest.TestCase):
 
         # We now modify the second file
         with open(filenames[1], 'wb') as f:
-            f.write(os.urandom(1024))
+            data = str(next(data_iter))
+            f.write(data)
 
         # We expect only this file to be uploaded
-        expected.extend([call(bucket=None, name=filenames[1]),
-                         call().set_metadata('Expires', 
-                             'Thu, 31 Dec 2037 23:59:59 GMT'),
-                         call().set_metadata('Content-Encoding', 'gzip'),
-                         call().set_contents_from_filename(filenames[1]),
-                         call().make_public()])
+        expected.extend([call.put_object(ACL='public-read',
+                                         Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
+                                                   'Content-Encoding': 'gzip'},
+                                         Bucket=None,
+                                         Key=filenames[1],
+                                         Body=data)])
 
-        new_hashes = flask_s3._upload_files(self.app, files, None,
-                hashes=dict(hashes))
+        new_hashes = flask_s3._upload_files(key_mock, self.app, files, None,
+                                            hashes=dict(hashes))
 
         self.assertEqual(expected, key_mock.mock_calls)
 
@@ -308,6 +320,7 @@ class S3Tests(unittest.TestCase):
                     u'/bar/s/a/b.css']
         for i, e in zip(inputs, expected):
             self.assertEquals(e, flask_s3._static_folder_path(*i))
+
 
 if __name__ == '__main__':
     unittest.main()
