@@ -3,8 +3,6 @@ import ntpath
 import tempfile
 import os
 
-import pprint
-
 from mock import Mock, patch, call, mock_open
 from flask import Flask, render_template_string, Blueprint
 
@@ -237,7 +235,7 @@ class S3Tests(unittest.TestCase):
             self.assertEquals(exp, actual)
 
     @patch('flask_s3.boto3')
-    @patch('flask_s3.open', mock_open(read_data='test'))
+    @patch('__builtin__.open', mock_open(read_data='test'))
     def test__write_files(self, key_mock):
         """ Tests _write_files """
         static_url_loc = '/foo/static'
@@ -278,12 +276,12 @@ class S3Tests(unittest.TestCase):
                 f.write(data)
 
             # We expect each file to be uploaded
-            expected.extend([call.put_object(ACL='public-read',
-                                             Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
-                                                       'Content-Encoding': 'gzip'},
-                                             Bucket=None,
-                                             Key=filename,
-                                             Body=data)])
+            expected.append(call.put_object(ACL='public-read',
+                                            Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
+                                                      'Content-Encoding': 'gzip'},
+                                            Bucket=None,
+                                            Key=filename.lstrip("/"),
+                                            Body=data))
 
         files = {(static_url_loc, static_folder): filenames}
 
@@ -299,16 +297,18 @@ class S3Tests(unittest.TestCase):
             f.write(data)
 
         # We expect only this file to be uploaded
-        expected.extend([call.put_object(ACL='public-read',
-                                         Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
-                                                   'Content-Encoding': 'gzip'},
-                                         Bucket=None,
-                                         Key=filenames[1],
-                                         Body=data)])
+        expected.append(call.put_object(ACL='public-read',
+                                        Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
+                                                  'Content-Encoding': 'gzip'},
+                                        Bucket=None,
+                                        Key=filenames[1].lstrip("/"),
+                                        Body=data))
 
         new_hashes = flask_s3._upload_files(key_mock, self.app, files, None,
                                             hashes=dict(hashes))
+        import pprint
 
+        pprint.pprint(zip(expected, key_mock.mock_calls))
         self.assertEqual(expected, key_mock.mock_calls)
 
     def test_static_folder_path(self):
