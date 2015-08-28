@@ -44,6 +44,8 @@ def url_for(endpoint, **values):
     of your templates.
     """
     app = current_app
+    if app.config.get('TESTING', False) and not app.config.get('S3_OVERRIDE_TESTING', True):
+        return flask_url_for(endpoint, **values)
     if 'S3_BUCKET_NAME' not in app.config:
         raise ValueError("S3_BUCKET_NAME not found in app configuration.")
 

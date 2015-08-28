@@ -2,6 +2,7 @@ import unittest
 import ntpath
 import tempfile
 import os
+import sys
 
 try:
     from unittest.mock import Mock, patch, call, mock_open
@@ -51,6 +52,7 @@ class UrlTests(unittest.TestCase):
         self.app.config['S3_USE_HTTPS'] = True
         self.app.config['S3_BUCKET_DOMAIN'] = 's3.amazonaws.com'
         self.app.config['S3_CDN_DOMAIN'] = ''
+        self.app.config['S3_OVERRIDE_TESTING'] = True
 
         @self.app.route('/<url_for_string>')
         def a(url_for_string):
@@ -242,8 +244,10 @@ class S3Tests(unittest.TestCase):
             actual = flask_s3._path_to_relative_url(in_)
             self.assertEquals(exp, actual)
 
+    @unittest.skipIf(sys.version_info < (3, 0),
+                     "not supported in this version")
     @patch('flask_s3.boto3')
-    @patch("{}.open".format("builtins" if six.PY3 else "__builtins__"), mock_open(read_data='test'))
+    @patch("{}.open".format("builtins"), mock_open(read_data='test'))
     def test__write_files(self, key_mock):
         """ Tests _write_files """
         static_url_loc = '/foo/static'
