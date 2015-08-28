@@ -13,6 +13,8 @@ from flask import current_app
 logger = logging.getLogger('flask_s3')
 
 
+import six
+
 def hash_file(filename):
     """
     Generate a hash for the contents of a file
@@ -72,13 +74,13 @@ def url_for(endpoint, **values):
 
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
-    u = u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
+    u = six.u('%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or ''))
     return u
 
 
 def _gather_files(app, hidden):
     """ Gets all files in static folders and returns in dict."""
-    dirs = [(unicode(app.static_folder), app.static_url_path)]
+    dirs = [(six.u(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
         blueprints = app.blueprints.values()
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
@@ -118,7 +120,7 @@ def _static_folder_path(static_url, static_folder, static_asset):
                          (static_asset, static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
-    return u'%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
+    return six.u('%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/')))
 
 
 def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
@@ -157,7 +159,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
 
 def _upload_files(s3, app, files_, bucket, hashes=None):
     new_hashes = []
-    for (static_folder, static_url), names in files_.iteritems():
+    for (static_folder, static_url), names in six.iteritems(files_):
         new_hashes.extend(_write_files(s3, app, static_url, static_folder, names,
                                        bucket, hashes=hashes))
     return new_hashes

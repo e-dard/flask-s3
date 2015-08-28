@@ -22,7 +22,8 @@ setup(
     platforms='any',
     install_requires=[
         'Flask',
-        'Boto3>=1.1.1'
+        'Boto3>=1.1.1',
+        'six'
     ],
     tests_require=['nose', 'mock'],
     classifiers=[
@@ -33,5 +34,6 @@ setup(
         'Programming Language :: Python',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules'
-    ]
+    ],
+    test_suite = 'nose.collector'
 )
