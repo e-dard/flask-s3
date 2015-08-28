@@ -58,9 +58,9 @@ def url_for(endpoint, **values):
         raise ValueError("S3_BUCKET_NAME not found in app configuration.")
 
     if endpoint == 'static' or endpoint.endswith('.static'):
-        scheme = 'http'
-        if app.config['S3_USE_HTTPS']:
-            scheme = 'https'
+        scheme = 'https'
+        if app.config['S3_USE_HTTP']:
+            scheme = 'http'
 
         if app.config['S3_URL_STYLE'] == 'host':
             url_format = '%(bucket_name)s.%(bucket_domain)s'
