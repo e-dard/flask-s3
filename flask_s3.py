@@ -3,6 +3,7 @@ import logging
 import hashlib
 import json
 from collections import defaultdict
+import re
 
 import boto3
 import boto3.exceptions
@@ -14,6 +15,13 @@ logger = logging.getLogger('flask_s3')
 
 
 import six
+
+def merge_two_dicts(x, y):
+    '''Given two dicts, merge them into a new dict as a shallow copy.'''
+    z = x.copy()
+    z.update(y)
+    return z
+
 
 def hash_file(filename):
     """
@@ -149,12 +157,25 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
         if ex_keys and full_key_name in ex_keys or exclude:
             logger.debug("%s excluded from upload" % key_name)
         else:
+            h = {}
+            # Set more custom headers if the filepath matches certain
+            # configured regular expressions.
+            filepath_headers = app.config.get('S3_FILEPATH_HEADERS')
+            if filepath_headers:
+                for filepath_regex, headers in filepath_headers.iteritems():
+                    if re.search(filepath_regex, file_path):
+                        for header, value in headers.iteritems():
+                            h[header] = value
+
             with open(file_path) as fp:
                 s3.put_object(Bucket=bucket,
                               Key=key_name,
                               Body=fp.read(),
                               ACL="public-read",
-                              Metadata=app.config['S3_HEADERS'])
+                              Metadata=merge_two_dicts(app.config['S3_HEADERS'], h))
+
+
+
 
     return new_hashes
 
@@ -300,6 +321,7 @@ class FlaskS3(object):
                     ('S3_CDN_DOMAIN', ''),
                     ('S3_USE_CACHE_CONTROL', False),
                     ('S3_HEADERS', {}),
+                    ('S3_FILEPATH_HEADERS', {}),
                     ('S3_ONLY_MODIFIED', False),
                     ('S3_URL_STYLE', 'host')]
 
