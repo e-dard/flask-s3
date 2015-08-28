@@ -3,15 +3,24 @@ import logging
 import hashlib
 import json
 from collections import defaultdict
+import re
 
+import boto3
+import boto3.exceptions
+from botocore.exceptions import ClientError
 from flask import url_for as flask_url_for
 from flask import current_app
-from boto.s3.connection import S3Connection
-from boto.s3 import connect_to_region
-from boto.exception import S3CreateError, S3ResponseError
-from boto.s3.key import Key
 
 logger = logging.getLogger('flask_s3')
+
+
+import six
+
+def merge_two_dicts(x, y):
+    '''Given two dicts, merge them into a new dict as a shallow copy.'''
+    z = x.copy()
+    z.update(y)
+    return z
 
 
 def hash_file(filename):
@@ -43,13 +52,15 @@ def url_for(endpoint, **values):
     of your templates.
     """
     app = current_app
+    if app.config.get('TESTING', False) and not app.config.get('S3_OVERRIDE_TESTING', True):
+        return flask_url_for(endpoint, **values)
     if 'S3_BUCKET_NAME' not in app.config:
         raise ValueError("S3_BUCKET_NAME not found in app configuration.")
 
     if endpoint == 'static' or endpoint.endswith('.static'):
-        scheme = 'http'
-        if app.config['S3_USE_HTTPS']:
-            scheme = 'https'
+        scheme = 'https'
+        if app.config['S3_USE_HTTP']:
+            scheme = 'http'
 
         if app.config['S3_URL_STYLE'] == 'host':
             url_format = '%(bucket_name)s.%(bucket_domain)s'
@@ -73,13 +84,13 @@ def url_for(endpoint, **values):
 
 def _bp_static_url(blueprint):
     """ builds the absolute url path for a blueprint's static folder """
-    u = u'%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or '')
+    u = six.u('%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or ''))
     return u
 
 
 def _gather_files(app, hidden):
     """ Gets all files in static folders and returns in dict."""
-    dirs = [(unicode(app.static_folder), app.static_url_path)]
+    dirs = [(six.u(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
         blueprints = app.blueprints.values()
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
@@ -119,40 +130,34 @@ def _static_folder_path(static_url, static_folder, static_asset):
                          (static_asset, static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
-    return u'%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
+    return six.u('%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/')))
 
 
-def _write_files(app, static_url_loc, static_folder, files, bucket,
+def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                  ex_keys=None, hashes=None):
     """ Writes all the files inside a static folder to S3. """
     new_hashes = []
     static_folder_rel = _path_to_relative_url(static_folder)
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
-        key_name = _static_folder_path(static_url_loc, static_folder_rel,
+        full_key_name = _static_folder_path(static_url_loc, static_folder_rel,
                                        asset_loc)
+        key_name = full_key_name.lstrip("/")
         msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
 
         exclude = False
         if app.config.get('S3_ONLY_MODIFIED', False):
             file_hash = hash_file(file_path)
-            new_hashes.append((key_name, file_hash))
+            new_hashes.append((full_key_name, file_hash))
 
-            if hashes and hashes.get(key_name, None) == file_hash:
+            if hashes and hashes.get(full_key_name, None) == file_hash:
                 exclude = True
 
-        if ex_keys and key_name in ex_keys or exclude:
+        if ex_keys and full_key_name in ex_keys or exclude:
             logger.debug("%s excluded from upload" % key_name)
         else:
-            k = Key(bucket=bucket, name=key_name)
-
-            # Set custom headers
-            headers = app.config.get('S3_HEADERS')
-            if headers:
-                for header, value in headers.iteritems():
-                    k.set_metadata(header, value)
-
+            h = {}
             # Set more custom headers if the filepath matches certain
             # configured regular expressions.
             filepath_headers = app.config.get('S3_FILEPATH_HEADERS')
@@ -160,18 +165,25 @@ def _write_files(app, static_url_loc, static_folder, files, bucket,
                 for filepath_regex, headers in filepath_headers.iteritems():
                     if re.search(filepath_regex, file_path):
                         for header, value in headers.iteritems():
-                            k.set_metadata(header, value)
+                            h[header] = value
 
-            k.set_contents_from_filename(file_path)
-            k.make_public()
+            with open(file_path) as fp:
+                s3.put_object(Bucket=bucket,
+                              Key=key_name,
+                              Body=fp.read(),
+                              ACL="public-read",
+                              Metadata=merge_two_dicts(app.config['S3_HEADERS'], h))
+
+
+
 
     return new_hashes
 
 
-def _upload_files(app, files_, bucket, hashes=None):
+def _upload_files(s3, app, files_, bucket, hashes=None):
     new_hashes = []
-    for (static_folder, static_url), names in files_.iteritems():
-        new_hashes.extend(_write_files(app, static_url, static_folder, names,
+    for (static_folder, static_url), names in six.iteritems(files_):
+        new_hashes.extend(_write_files(s3, app, static_url, static_folder, names,
                                        bucket, hashes=hashes))
     return new_hashes
 
@@ -240,45 +252,42 @@ def create_all(app, user=None, password=None, bucket_name=None,
     logger.debug("All valid files: %s" % all_files)
 
     # connect to s3
-    if not location:
-        conn = S3Connection(user, password)  # (default region)
-    else:
-        conn = connect_to_region(location,
-                                 aws_access_key_id=user,
-                                 aws_secret_access_key=password)
+    s3 = boto3.client("s3",
+                      region_name=location or None,
+                      aws_access_key_id=user,
+                      aws_secret_access_key=password)
 
     # get_or_create bucket
     try:
-        try:
-            bucket = conn.create_bucket(bucket_name)
-        except S3CreateError as e:
-            if e.error_code == u'BucketAlreadyOwnedByYou':
-                bucket = conn.get_bucket(bucket_name)
-            else:
-                raise e
+        s3.head_bucket(Bucket=bucket_name)
+    except ClientError as e:
+        if int(e.response['Error']['Code']) == 404:
+            # Create the bucket
+            bucket = s3.create_bucket(Bucket=bucket_name)
+        else:
+            raise
 
-        bucket.make_public(recursive=False)
-    except S3CreateError as e:
-        raise e
+    s3.put_bucket_acl(Bucket=bucket_name, ACL='public-read')
 
     if app.config['S3_ONLY_MODIFIED']:
         try:
-            hashes = json.loads(
-                Key(bucket=bucket,
-                    name=".file-hashes").get_contents_as_string())
-        except S3ResponseError as e:
+            hashes_object = s3.get_object(Bucket=bucket_name, Key='.file-hashes')
+            hashes = json.loads(str(hashes_object['Body'].read()))
+        except ClientError as e:
             logger.warn("No file hashes found: %s" % e)
             hashes = None
 
-        new_hashes = _upload_files(app, all_files, bucket, hashes=hashes)
+        new_hashes = _upload_files(s3, app, all_files, bucket_name, hashes=hashes)
 
         try:
-            k = Key(bucket=bucket, name=".file-hashes")
-            k.set_contents_from_string(json.dumps(dict(new_hashes)))
-        except S3ResponseError as e:
+            s3.put_object(Bucket=bucket_name,
+                          Key='.file-hashes',
+                          Body=json.dumps(dict(new_hashes)),
+                          ACL='private')
+        except boto3.exceptions.S3UploadFailedError as e:
             logger.warn("Unable to upload file hashes: %s" % e)
     else:
-        _upload_files(app, all_files, bucket)
+        _upload_files(s3, app, all_files, bucket_name)
 
 
 class FlaskS3(object):
@@ -292,6 +301,7 @@ class FlaskS3(object):
     :param app: optional :class:`flask.Flask` application object
     :type app: :class:`flask.Flask` or None
     """
+
     def __init__(self, app=None):
         if app is not None:
             self.init_app(app)
