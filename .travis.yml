@@ -7,5 +7,6 @@ python:
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -r requirements.txt --use-mirrors
 # command to run tests, e.g. python setup.py test
-script: nosetests
+script: nosetests --with-coverage --cover-package=flask_s3
+after_success: coveralls
 sudo: false

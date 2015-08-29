@@ -36,7 +36,7 @@ class FlaskStaticTest(unittest.TestCase):
     def test_config(self):
         """ Tests configuration vars exist. """
         FlaskS3(self.app)
-        defaults = ('S3_USE_HTTPS', 'USE_S3', 'USE_S3_DEBUG',
+        defaults = ('S3_USE_HTTP', 'USE_S3', 'USE_S3_DEBUG',
                     'S3_BUCKET_DOMAIN', 'S3_CDN_DOMAIN',
                     'S3_USE_CACHE_CONTROL', 'S3_HEADERS',
                     'S3_URL_STYLE')

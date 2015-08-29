@@ -1,3 +1,6 @@
 Flask
 boto3
 six
+coverage
+coveralls
+nose
