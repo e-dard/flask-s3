@@ -130,14 +130,7 @@ def _static_folder_path(static_url, static_folder, static_asset):
                          (static_asset, static_folder))
     rel_asset = static_asset[len(static_folder):]
     # Now bolt the static url path and the relative asset location together
-    if six.PY2:
-        if not isinstance(static_url, unicode) or not isinstance(rel_asset, unicode):
-            u = six.u
-        else:
-            u = str
-    else:
-        u = str
-    return u('%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/')))
+    return '%s/%s' % (static_url.rstrip('/'), rel_asset.lstrip('/'))
 
 
 def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
