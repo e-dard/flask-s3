@@ -1,24 +1,51 @@
-import os
-import logging
 import hashlib
 import json
+import logging
+import os
 import re
 from collections import defaultdict
-import re
 
 import boto3
 import boto3.exceptions
 from botocore.exceptions import ClientError
-from flask import url_for as flask_url_for
 from flask import current_app
+from flask import url_for as flask_url_for
 
 logger = logging.getLogger('flask_s3')
 
-
 import six
 
+# Mapping for Header names to S3 parameters
+header_mapping = {
+    'cache-control': 'CacheControl',
+    'content-disposition': 'ContentDisposition',
+    'content-encoding': 'ContentEncoding',
+    'content-language': 'ContentLanguage',
+    'content-length': 'ContentLength',
+    'content-md5': 'ContentMD5',
+    'content-type': 'ContentType',
+    'expires': 'Expires',
+}
+
+
+def split_metadata_params(headers):
+    """
+    Given a dict of headers for s3, seperates those that are boto3
+    parameters and those that must be metadata
+    """
+
+    params = {}
+    metadata = {}
+    for header_name in headers:
+        if header_name.lower() in header_mapping:
+            params[header_mapping[header_name.lower()]] = headers[header_name]
+        else:
+            metadata[header_name] = headers[header_name]
+    return metadata, params
+
+
 def merge_two_dicts(x, y):
-    '''Given two dicts, merge them into a new dict as a shallow copy.'''
+    """Given two dicts, merge them into a new dict as a shallow copy."""
     z = x.copy()
     z.update(y)
     return z
@@ -153,7 +180,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
     for file_path in files:
         asset_loc = _path_to_relative_url(file_path)
         full_key_name = _static_folder_path(static_url_loc, static_folder_rel,
-                                       asset_loc)
+                                            asset_loc)
         key_name = full_key_name.lstrip("/")
         msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
         logger.debug(msg)
@@ -180,14 +207,13 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                             h[header] = value
 
             with open(file_path) as fp:
+                metadata, params = split_metadata_params(merge_two_dicts(app.config['S3_HEADERS'], h))
                 s3.put_object(Bucket=bucket,
                               Key=key_name,
                               Body=fp.read(),
                               ACL="public-read",
-                              Metadata=merge_two_dicts(app.config['S3_HEADERS'], h))
-
-
-
+                              Metadata=metadata,
+                              **params)
 
     return new_hashes
 
