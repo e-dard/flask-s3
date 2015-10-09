@@ -1,8 +1,8 @@
-import unittest
 import ntpath
-import tempfile
 import os
 import sys
+import tempfile
+import unittest
 
 try:
     from unittest.mock import Mock, patch, call, mock_open
@@ -10,7 +10,6 @@ except ImportError:
     from mock import Mock, patch, call, mock_open
 from flask import Flask, render_template_string, Blueprint
 import six
-
 import flask_s3
 from flask_s3 import FlaskS3
 
@@ -195,8 +194,8 @@ class S3Tests(unittest.TestCase):
 
         expected = {('/home/bar', six.u('/a/bar')): ['/home/bar/b'],
                     ('/home/zoo', six.u('/b/bar')): ['/home/zoo/c',
-                                               '/home/zoo/foo/d',
-                                               '/home/zoo/foo/e']}
+                                                     '/home/zoo/foo/d',
+                                                     '/home/zoo/foo/e']}
         actual = flask_s3._gather_files(self.app, False)
         self.assertEqual(expected, actual)
 
@@ -293,11 +292,12 @@ class S3Tests(unittest.TestCase):
 
             # We expect each file to be uploaded
             expected.append(call.put_object(ACL='public-read',
-                                            Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
-                                                      'Content-Encoding': 'gzip'},
                                             Bucket=None,
                                             Key=filename.lstrip("/"),
-                                            Body=data))
+                                            Body=data,
+                                            Metadata={},
+                                            Expires='Thu, 31 Dec 2037 23:59:59 GMT',
+                                            ContentEncoding='gzip'))
 
         files = {(static_url_loc, static_folder): filenames}
 
@@ -317,11 +317,12 @@ class S3Tests(unittest.TestCase):
 
         # We expect only this file to be uploaded
         expected.append(call.put_object(ACL='public-read',
-                                        Metadata={'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
-                                                  'Content-Encoding': 'gzip'},
                                         Bucket=None,
                                         Key=filenames[1].lstrip("/"),
-                                        Body=data))
+                                        Body=data,
+                                        Metadata={},
+                                        Expires='Thu, 31 Dec 2037 23:59:59 GMT',
+                                        ContentEncoding='gzip'))
 
         new_hashes = flask_s3._upload_files(key_mock, self.app, files, None,
                                             hashes=dict(hashes))
