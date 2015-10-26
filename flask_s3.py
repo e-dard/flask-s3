@@ -3,7 +3,9 @@ import json
 import logging
 import os
 import re
-import zlib
+import gzip
+import cStringIO
+import mimetypes
 from collections import defaultdict
 
 import boto3
@@ -210,11 +212,22 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
 
             if should_gzip:
                 h["content-encoding"] = "gzip"
+                if "content-type" not in h:
+                    # When we use GZIP we have to explicitly set the content type
+                    (mimetype, encoding) = mimetypes.guess_type(file_path,
+                        False)
+                    h["content-type"] = mimetype
 
             with open(file_path) as fp:
                 metadata, params = split_metadata_params(merge_two_dicts(app.config['S3_HEADERS'], h))
                 if should_gzip:
-                    data = zlib.compress(fp.read())
+                    compressed = cStringIO.StringIO()
+                    z = gzip.GzipFile(os.path.basename(file_path), 'wb', 9,
+                        compressed)
+                    z.write(fp.read())
+                    z.close()
+
+                    data = compressed.getvalue()
                 else:
                     data = fp.read()
 
