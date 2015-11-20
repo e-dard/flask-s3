@@ -95,6 +95,12 @@ def url_for(endpoint, **values):
         scheme = 'https'
         if app.config['S3_USE_HTTP']:
             scheme = 'http'
+        # allow per url override for scheme
+        scheme = values.pop('_scheme', scheme)
+        # manage other special values, all have no meaning for static urls
+        values.pop('_external', False)  # external has no meaning here
+        values.pop('_anchor', None)  # anchor as well
+        values.pop('_method', None)  # method too
 
         if app.config['S3_URL_STYLE'] == 'host':
             url_format = '%(bucket_name)s.%(bucket_domain)s'
