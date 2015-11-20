@@ -104,6 +104,29 @@ class UrlTests(unittest.TestCase):
         exp = 'https://foo.s3.amazonaws.com/static/bah.js'
         self.assertEquals(self.client_get(ufs).data, six.b(exp))
 
+    def test_url_for_per_url_scheme(self):
+        """
+        Tests that if _scheme is passed in the url_for arguments, that
+        scheme is used instead of configuration scheme.
+        """
+        # check _scheme overriden per url
+        ufs = "{{url_for('static', filename='bah.js', _scheme='http')}}"
+        exp = 'http://foo.s3.amazonaws.com/static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, six.b(exp))
+
+    def test_url_for_handles_special_args(self):
+        """
+        Tests that if any special arguments are passed, they are ignored, and
+        removed from generated url. As of this writing these are the special
+        args: _external, _anchor, _method (from flask's url_for)
+        """
+        # check _external, _anchor, and _method are ignored, and not added
+        # to the url
+        ufs = "{{url_for('static', filename='bah.js',\
+            _external=True, _anchor='foobar', _method='GET')}}"
+        exp = 'https://foo.s3.amazonaws.com/static/bah.js'
+        self.assertEquals(self.client_get(ufs).data, six.b(exp))
+
     def test_url_for_debug(self):
         """Tests Flask-S3 behaviour in debug mode."""
         self.app.debug = True
