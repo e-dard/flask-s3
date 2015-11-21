@@ -5,11 +5,13 @@ Flask-S3
 Easily serve your static files from Amazon S3.
 """
 from setuptools import setup
+from flask_s3 import __version__
+
 
 
 setup(
     name='Flask-S3',
-    version='0.2.6',
+    version=".".join(__version__),
     url='http://github.com/e-dard/flask-s3',
     license='WTFPL',
     author='Edward Robinson',

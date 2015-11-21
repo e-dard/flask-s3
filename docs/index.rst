@@ -174,27 +174,27 @@ uploading assets to S3.
 `AWS_SECRET_ACCESS_KEY`     Your AWS secret key. As with the access key, this
                             need not be stored in your configuration if passed
                             in to `create_all`.
-`S3_BUCKET_DOMAIN`          The domain part of the URI for your S3 bucket. You
+`FLASKS3_BUCKET_DOMAIN`     The domain part of the URI for your S3 bucket. You
                             probably won't need to change this.
                             **Default:** ``u's3.amazonaws.com'``
-`S3_CDN_DOMAIN`             AWS makes it easy to attach CloudFront to an S3
+`FLASKS3_CDN_DOMAIN`        AWS makes it easy to attach CloudFront to an S3
                             bucket. If you want to use this or another CDN,
                             set the base domain here. This is distinct from the
                             `S3_BUCKET_DOMAIN` since it will not include the
                             bucket name in the base url.
-`S3_BUCKET_NAME`            The desired name for your Amazon S3 bucket. Note:
+`FLASKS3_BUCKET_NAME`       The desired name for your Amazon S3 bucket. Note:
                             the name will be visible in all your assets' URLs.
-`S3_URL_STYLE`              Set to `'host'` to use virtual-host-style URLs,
+`FLASKS3_URL_STYLE`         Set to `'host'` to use virtual-host-style URLs,
                             e.g. ``bucketname.s3.amazonaws.com``. Set to
                             `'path'` to use path-style URLs, e.g.
                             ``s3.amazonaws.com/bucketname``.
                             **Default:** `'host'`
-`S3_USE_HTTPS`              Specifies whether or not to serve your assets
+`FLASKS3_USE_HTTPS`         Specifies whether or not to serve your assets
                             stored in S3 over HTTPS.
                             Can be overriden per url, by using the `_scheme`
                             argument as per usual Flask `url_for`.
                             **Default:** `True`
-`USE_S3`                    This setting allows you to toggle whether Flask-S3
+`FLASKS3_ACTIVE`            This setting allows you to toggle whether Flask-S3
                             is active or not. When set to `False` your
                             application's templates will revert to including
                             static asset locations determined by
@@ -206,7 +206,7 @@ uploading assets to S3.
                             allows the `USE_S3` config variable to be the
                             definitive check as to whether `flask_s3.url_for`
                             is overriding `flask.url_for`.
-`USE_S3_DEBUG`              By default, Flask-S3 will be switched off when
+`FLASKS3_DEBUG`             By default, Flask-S3 will be switched off when
                             running your application in `debug`_ mode, so that
                             your templates include static asset locations
                             specified by `flask.url_for`. If you wish to enable
@@ -214,9 +214,9 @@ uploading assets to S3.
                             **Note**: if `USE_S3` is set to `False` then
                             templates will always include asset locations
                             specified by `flask.url_for`.
-`S3_HEADERS`                Sets custom headers to be sent with each file to S3.
+`FLASKS3_HEADERS`           Sets custom headers to be sent with each file to S3.
                             **Default:** `{}`
-`S3_FILEPATH_HEADERS`       Sets custom headers for files whose filepath matches
+`FLASKS3_FILEPATH_HEADERS`  Sets custom headers for files whose filepath matches
                             certain regular expressions. (Note that this cannot
                             be used for CORS, that must be set per S3 bucket
                             using an XML config string.) E.g. to add custom
@@ -225,16 +225,14 @@ uploading assets to S3.
                             `    {'Texted-Up-By': 'Mister Foo'}`
                             `}`
                             **Default:** `{}`
-`S3_ONLY_MODIFIED`          Only upload files that have been modified since last
+`FLASKS3_ONLY_MODIFIED`     Only upload files that have been modified since last
                             upload to S3. SHA-1 file hashes are used to compute
                             file changes. You can delete `.file-hashes` from
-                            your S3 bucket to force all files to upload again.
-`S3_CACHE_CONTROL`          **Deprecated**. Please use `S3_HEADERS` instead.
-`S3_USE_CACHE_CONTROL`      **Deprecated**. Please use `S3_HEADERS` instead.
-`S3_GZIP`                   Compress all assets using GZIP and set the
+                            your S3 bucket to force all files to upload again.ad.
+`FLASKS3_GZIP`              Compress all assets using GZIP and set the
                             corresponding Content-Type and Content-Encoding
                             headers on the S3 files.
-`S3_FORCE_MIMETYPE`         Always set the Content-Type header on the S3 files
+`FLASKS3_FORCE_MIMETYPE`    Always set the Content-Type header on the S3 files
                             irrespective of gzipping. Defaults to `False`.
 =========================== ===================================================
 

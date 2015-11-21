@@ -4,6 +4,11 @@ import logging
 import os
 import re
 import gzip
+
+import warnings
+import copy
+
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -32,6 +37,8 @@ header_mapping = {
     'content-type': 'ContentType',
     'expires': 'Expires',
 }
+
+__version__ = (0, 2, 7)
 
 
 def split_metadata_params(headers):
@@ -86,14 +93,14 @@ def url_for(endpoint, **values):
     of your templates.
     """
     app = current_app
-    if app.config.get('TESTING', False) and not app.config.get('S3_OVERRIDE_TESTING', True):
+    if app.config.get('TESTING', False) and not app.config.get('FLASKS3_OVERRIDE_TESTING', True):
         return flask_url_for(endpoint, **values)
-    if 'S3_BUCKET_NAME' not in app.config:
-        raise ValueError("S3_BUCKET_NAME not found in app configuration.")
+    if 'FLASKS3_BUCKET_NAME' not in app.config:
+        raise ValueError("FLASKS3_BUCKET_NAME not found in app configuration.")
 
     if endpoint == 'static' or endpoint.endswith('.static'):
         scheme = 'https'
-        if app.config['S3_USE_HTTP']:
+        if not app.config.get("FLASKS3_USE_HTTPS", True):
             scheme = 'http'
         # allow per url override for scheme
         scheme = values.pop('_scheme', scheme)
@@ -102,21 +109,21 @@ def url_for(endpoint, **values):
         values.pop('_anchor', None)  # anchor as well
         values.pop('_method', None)  # method too
 
-        if app.config['S3_URL_STYLE'] == 'host':
+        if app.config['FLASKS3_URL_STYLE'] == 'host':
             url_format = '%(bucket_name)s.%(bucket_domain)s'
-        elif app.config['S3_URL_STYLE'] == 'path':
+        elif app.config['FLASKS3_URL_STYLE'] == 'path':
             url_format = '%(bucket_domain)s/%(bucket_name)s'
         else:
             raise ValueError('Invalid S3 URL style: "%s"'
-                             % app.config['S3_URL_STYLE'])
+                             % app.config['FLASKS3_URL_STYLE'])
 
         bucket_path = url_format % {
-            'bucket_name': app.config['S3_BUCKET_NAME'],
-            'bucket_domain': app.config['S3_BUCKET_DOMAIN'],
+            'bucket_name': app.config['FLASKS3_BUCKET_NAME'],
+            'bucket_domain': app.config['FLASKS3_BUCKET_DOMAIN'],
         }
 
-        if app.config['S3_CDN_DOMAIN']:
-            bucket_path = '%s' % app.config['S3_CDN_DOMAIN']
+        if app.config['FLASKS3_CDN_DOMAIN']:
+            bucket_path = '%s' % app.config['FLASKS3_CDN_DOMAIN']
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
         return urls.build(endpoint, values=values, force_external=True)
     return flask_url_for(endpoint, **values)
@@ -187,8 +194,8 @@ def _static_folder_path(static_url, static_folder, static_asset):
 def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                  ex_keys=None, hashes=None):
     """ Writes all the files inside a static folder to S3. """
-    should_gzip = app.config.get('S3_GZIP')
-    add_mime = app.config.get('S3_FORCE_MIMETYPE')
+    should_gzip = app.config.get('FLASKS3_GZIP')
+    add_mime = app.config.get('FLASKS3_FORCE_MIMETYPE')
     new_hashes = []
     static_folder_rel = _path_to_relative_url(static_folder)
     for file_path in files:
@@ -196,11 +203,10 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
         full_key_name = _static_folder_path(static_url_loc, static_folder_rel,
                                             asset_loc)
         key_name = full_key_name.lstrip("/")
-        msg = "Uploading %s to %s as %s" % (file_path, bucket, key_name)
-        logger.debug(msg)
+        logger.debug("Uploading {} to {} as {}".format(file_path, bucket, key_name))
 
         exclude = False
-        if app.config.get('S3_ONLY_MODIFIED', False):
+        if app.config.get('FLASKS3_ONLY_MODIFIED', False):
             file_hash = hash_file(file_path)
             new_hashes.append((full_key_name, file_hash))
 
@@ -213,7 +219,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
             h = {}
             # Set more custom headers if the filepath matches certain
             # configured regular expressions.
-            filepath_headers = app.config.get('S3_FILEPATH_HEADERS')
+            filepath_headers = app.config.get('FLASKS3_FILEPATH_HEADERS')
             if filepath_headers:
                 for filepath_regex, headers in filepath_headers.iteritems():
                     if re.search(filepath_regex, file_path):
@@ -235,7 +241,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                         file_path)
 
             with open(file_path) as fp:
-                metadata, params = split_metadata_params(merge_two_dicts(app.config['S3_HEADERS'], h))
+                metadata, params = split_metadata_params(merge_two_dicts(app.config['FLASKS3_HEADERS'], h))
                 if should_gzip:
                     compressed = StringIO()
                     z = gzip.GzipFile(os.path.basename(file_path), 'wb', 9,
@@ -327,10 +333,10 @@ def create_all(app, user=None, password=None, bucket_name=None,
     """
     user = user or app.config.get('AWS_ACCESS_KEY_ID')
     password = password or app.config.get('AWS_SECRET_ACCESS_KEY')
-    bucket_name = bucket_name or app.config.get('S3_BUCKET_NAME')
+    bucket_name = bucket_name or app.config.get('FLASKS3_BUCKET_NAME')
     if not bucket_name:
         raise ValueError("No bucket name provided.")
-    location = location or app.config.get('S3_REGION')
+    location = location or app.config.get('FLASKS3_REGION')
 
     # build list of static files
     all_files = _gather_files(app, include_hidden,
@@ -355,7 +361,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
 
     s3.put_bucket_acl(Bucket=bucket_name, ACL='public-read')
 
-    if app.config['S3_ONLY_MODIFIED']:
+    if app.config['FLASKS3_ONLY_MODIFIED']:
         try:
             hashes_object = s3.get_object(Bucket=bucket_name, Key='.file-hashes')
             hashes = json.loads(str(hashes_object['Body'].read()))
@@ -374,6 +380,33 @@ def create_all(app, user=None, password=None, bucket_name=None,
             logger.warn("Unable to upload file hashes: %s" % e)
     else:
         _upload_files(s3, app, all_files, bucket_name)
+
+
+def _test_deprecation(app, config):
+    """
+    Tests deprecation of old-style config headers.
+    """
+    warn = []
+    config = copy.deepcopy(config)
+    for key in config:
+        # Ugly thing here:
+        if key == "S3_BUCKET_DOMAIN": app.config["FLASKS3_BUCKET_DOMAIN"] = config["S3_BUCKET_DOMAIN"];warn.append(key)
+        elif key == "S3_CDN_DOMAIN": app.config["FLASKS3_CDN_DOMAIN"] = config["FLASKS3_CDN_DOMAIN"]; warn.append(key)
+        elif key == "S3_BUCKET_NAME": app.config["FLASKS3_BUCKET_NAME"] = config["S3_BUCKET_NAME"]; warn.append(key)
+        elif key == "S3_URL_STYLE": app.config["FLASKS3_URL_STYLE"] = config["S3_URL_STYLE"]; warn.append(key)
+        elif key == "S3_USE_HTTPS": app.config["FLASKS3_USE_HTTPS"] = config["S3_USE_HTTPS"]; warn.append(key)
+        elif key == "USE_S3": app.config["FLASKS3_ACTIVE"] = config["USE_S3"]; warn.append(key)
+        elif key == "USE_S3_DEBUG": app.config["FLASKS3_DEBUG"] = config["USE_S3_DEBUG"]; warn.append(key)
+        elif key == "S3_HEADERS": app.config["FLASKS3_HEADERS"] = config["S3_HEADERS"]; warn.append(key)
+        elif key == "S3_FILEPATH_HEADERS": config["FLASKS3_FILEPATH_HEADERS"] = config["S3_FILEPATH_HEADERS"]; warn.append(key)
+        elif key == "S3_ONLY_MODIFIED": app.config["FLASKS3_ONLY_MODIFIED"] = config["S3_ONLY_MODIFIED"]; warn.append(key)
+        elif key == "S3_GZIP": app.config["FLASKS3_GZIP"] = config["S3_GZIP"]; warn.append(key)
+        elif key == "S3_FORCE_MIMETYPE": app.config["FLASKS3_FORCE_MIMETYPE"] = config["S3_FORCE_MIMETIME"]; warn.append(key)
+
+    if warn:
+        warnings.warn("Using old S3_ configs is deprecated, and will be removed in 0.3.0. Keys: {}".format(",".join(warn)),
+                DeprecationWarning)
+
 
 
 class FlaskS3(object):
@@ -400,27 +433,30 @@ class FlaskS3(object):
 
         :param app: the :class:`flask.Flask` application object.
         """
-        defaults = [('S3_USE_HTTP', False),
-                    ('USE_S3', True),
-                    ('USE_S3_DEBUG', False),
-                    ('S3_BUCKET_DOMAIN', 's3.amazonaws.com'),
-                    ('S3_CDN_DOMAIN', ''),
-                    ('S3_USE_CACHE_CONTROL', False),
-                    ('S3_HEADERS', {}),
-                    ('S3_FILEPATH_HEADERS', {}),
-                    ('S3_ONLY_MODIFIED', False),
-                    ('S3_URL_STYLE', 'host'),
-                    ('S3_GZIP', False),
-                    ('S3_FORCE_MIMETYPE', False)]
+        defaults = [('FLASKS3_USE_HTTP', False),
+                    ('FLASKS3_ACTIVE', True),
+                    ('FLASKS3_DEBUG', False),
+                    ('FLASKS3_BUCKET_DOMAIN', 's3.amazonaws.com'),
+                    ('FLASKS3_CDN_DOMAIN', ''),
+                    ('FLASKS3_USE_CACHE_CONTROL', False),
+                    ('FLASKS3_HEADERS', {}),
+                    ('FLASKS3_FILEPATH_HEADERS', {}),
+                    ('FLASKS3_ONLY_MODIFIED', False),
+                    ('FLASKS3_URL_STYLE', 'host'),
+                    ('FLASKS3_GZIP', False),
+                    ('FLASKS3_FORCE_MIMETYPE', False)]
 
         for k, v in defaults:
             app.config.setdefault(k, v)
 
-        if app.debug and not app.config['USE_S3_DEBUG']:
-            app.config['USE_S3'] = False
+        if __version__ < (3, 0, 0):
+            _test_deprecation(app, app.config)
 
-        if app.config['USE_S3']:
+        if app.debug and not app.config['FLASKS3_DEBUG']:
+            app.config['FLASKS3_ACTIVE'] = False
+
+        if app.config['FLASKS3_ACTIVE']:
             app.jinja_env.globals['url_for'] = url_for
-        if app.config['S3_USE_CACHE_CONTROL'] and app.config.get('S3_CACHE_CONTROL'):
+        if app.config['FLASKS3_USE_CACHE_CONTROL'] and app.config.get('FLASKS3_CACHE_CONTROL'):
             cache_control_header = app.config['S3_CACHE_CONTROL']
-            app.config['S3_HEADERS']['Cache-Control'] = cache_control_header
+            app.config['FLASKS3_HEADERS']['Cache-Control'] = cache_control_header
