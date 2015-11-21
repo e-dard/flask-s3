@@ -11,7 +11,7 @@ from flask_s3 import __version__
 
 setup(
     name='Flask-S3',
-    version=".".join(__version__),
+    version=".".join(map(str, __version__)),
     url='http://github.com/e-dard/flask-s3',
     license='WTFPL',
     author='Edward Robinson',
