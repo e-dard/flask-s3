@@ -37,8 +37,7 @@ header_mapping = {
     'expires': 'Expires',
 }
 
-__version__ = (0, 2, 7)
-
+__version__ = (0, 2, 7, "post1")
 
 def split_metadata_params(headers):
     """
@@ -470,7 +469,7 @@ class FlaskS3(object):
         for k, v in defaults:
             app.config.setdefault(k, v)
 
-        if __version__ < (3, 0, 0):
+        if __version__[0:2] < (0, 3, 0):
             _test_deprecation(app, app.config)
 
         if app.debug and not app.config['FLASKS3_DEBUG']:
