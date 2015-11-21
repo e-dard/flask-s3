@@ -401,7 +401,7 @@ def _test_deprecation(app, config):
         elif key == "S3_FILEPATH_HEADERS": config["FLASKS3_FILEPATH_HEADERS"] = config["S3_FILEPATH_HEADERS"]; warn.append(key)
         elif key == "S3_ONLY_MODIFIED": app.config["FLASKS3_ONLY_MODIFIED"] = config["S3_ONLY_MODIFIED"]; warn.append(key)
         elif key == "S3_GZIP": app.config["FLASKS3_GZIP"] = config["S3_GZIP"]; warn.append(key)
-        elif key == "S3_FORCE_MIMETYPE": app.config["FLASKS3_FORCE_MIMETYPE"] = config["S3_FORCE_MIMETIME"]; warn.append(key)
+        elif key == "S3_FORCE_MIMETYPE": app.config["FLASKS3_FORCE_MIMETYPE"] = config["S3_FORCE_MIMETYPE"]; warn.append(key)
 
     if warn:
         warnings.warn("Using old S3_ configs is deprecated, and will be removed in 0.3.0. Keys: {}".format(",".join(warn)),
