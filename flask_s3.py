@@ -6,7 +6,6 @@ import re
 import gzip
 
 import warnings
-import copy
 
 
 try:
@@ -387,21 +386,43 @@ def _test_deprecation(app, config):
     Tests deprecation of old-style config headers.
     """
     warn = []
-    config = copy.deepcopy(config)
-    for key in config:
-        # Ugly thing here:
-        if key == "S3_BUCKET_DOMAIN": app.config["FLASKS3_BUCKET_DOMAIN"] = config["S3_BUCKET_DOMAIN"];warn.append(key)
-        elif key == "S3_CDN_DOMAIN": app.config["FLASKS3_CDN_DOMAIN"] = config["FLASKS3_CDN_DOMAIN"]; warn.append(key)
-        elif key == "S3_BUCKET_NAME": app.config["FLASKS3_BUCKET_NAME"] = config["S3_BUCKET_NAME"]; warn.append(key)
-        elif key == "S3_URL_STYLE": app.config["FLASKS3_URL_STYLE"] = config["S3_URL_STYLE"]; warn.append(key)
-        elif key == "S3_USE_HTTPS": app.config["FLASKS3_USE_HTTPS"] = config["S3_USE_HTTPS"]; warn.append(key)
-        elif key == "USE_S3": app.config["FLASKS3_ACTIVE"] = config["USE_S3"]; warn.append(key)
-        elif key == "USE_S3_DEBUG": app.config["FLASKS3_DEBUG"] = config["USE_S3_DEBUG"]; warn.append(key)
-        elif key == "S3_HEADERS": app.config["FLASKS3_HEADERS"] = config["S3_HEADERS"]; warn.append(key)
-        elif key == "S3_FILEPATH_HEADERS": config["FLASKS3_FILEPATH_HEADERS"] = config["S3_FILEPATH_HEADERS"]; warn.append(key)
-        elif key == "S3_ONLY_MODIFIED": app.config["FLASKS3_ONLY_MODIFIED"] = config["S3_ONLY_MODIFIED"]; warn.append(key)
-        elif key == "S3_GZIP": app.config["FLASKS3_GZIP"] = config["S3_GZIP"]; warn.append(key)
-        elif key == "S3_FORCE_MIMETYPE": app.config["FLASKS3_FORCE_MIMETYPE"] = config["S3_FORCE_MIMETYPE"]; warn.append(key)
+    # Ugly thing here:
+    if "S3_BUCKET_DOMAIN" in config:
+        app.config["FLASKS3_BUCKET_DOMAIN"] = config["S3_BUCKET_DOMAIN"]
+        warn.append("S3_BUCKET_DOMAIN")
+    if "S3_CDN_DOMAIN" in config:
+        app.config["FLASKS3_CDN_DOMAIN"] = config["FLASKS3_CDN_DOMAIN"]
+        warn.append("S3_CDN_DOMAIN")
+    if "S3_BUCKET_NAME" in config:
+        app.config["FLASKS3_BUCKET_NAME"] = config["S3_BUCKET_NAME"]
+        warn.append("S3_BUCKET_NAME")
+    if "S3_URL_STYLE" in config:
+        app.config["FLASKS3_URL_STYLE"] = config["S3_URL_STYLE"]
+        warn.append("S3_URL_STYLE")
+    if "S3_USE_HTTPS" in config:
+        app.config["FLASKS3_USE_HTTPS"] = config["S3_USE_HTTPS"]
+        warn.append("S3_USE_HTTPS")
+    if "USE_S3" in config:
+        app.config["FLASKS3_ACTIVE"] = config["USE_S3"]
+        warn.append("USE_S3")
+    if "USE_S3_DEBUG" in config:
+        app.config["FLASKS3_DEBUG"] = config["USE_S3_DEBUG"]
+        warn.append("USE_S3_DEBUG")
+    if "S3_HEADERS" in config:
+        app.config["FLASKS3_HEADERS"] = config["S3_HEADERS"]
+        warn.append("S3_HEADERS")
+    if "S3_FILEPATH_HEADERS" in config:
+        config["FLASKS3_FILEPATH_HEADERS"] = config["S3_FILEPATH_HEADERS"]
+        warn.append("S3_FILEPATH_HEADERS")
+    if "S3_ONLY_MODIFIED" in config:
+        app.config["FLASKS3_ONLY_MODIFIED"] = config["S3_ONLY_MODIFIED"]
+        warn.append("S3_ONLY_MODIFIED")
+    if "S3_GZIP" in config:
+        app.config["FLASKS3_GZIP"] = config["S3_GZIP"]
+        warn.append("S3_GZIP")
+    if "S3_FORCE_MIMETYPE" in config:
+        app.config["FLASKS3_FORCE_MIMETYPE"] = config["S3_FORCE_MIMETYPE"]
+        warn.append("S3_FORCE_MIMETYPE")
 
     if warn:
         warnings.warn("Using old S3_ configs is deprecated, and will be removed in 0.3.0. Keys: {}".format(",".join(warn)),
