@@ -37,7 +37,7 @@ header_mapping = {
     'expires': 'Expires',
 }
 
-__version__ = (0, 2, 7, "post1")
+__version__ = (0, 2, 7, "post2")
 
 def split_metadata_params(headers):
     """
