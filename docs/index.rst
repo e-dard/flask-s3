@@ -77,7 +77,7 @@ Flask-S3 know about your :class:`flask.Flask` application object.
     from flask_s3 import FlaskS3
 
     app = Flask(__name__)
-    app.config['S3_BUCKET_NAME'] = 'mybucketname'
+    app.config['FLASKS3_BUCKET_NAME'] = 'mybucketname'
     s3 = FlaskS3(app)
 
 In many cases, however, one cannot expect a Flask instance to be ready
@@ -143,11 +143,11 @@ Setting Custom HTTP Headers
 ~~~~~~~~~~~~~~~~~
 
 To set custom HTTP headers on the files served from S3 specify what
-headers you want to use with the `S3_HEADERS` option.
+headers you want to use with the `FLASKS3_HEADERS` option.
 
 .. code-block:: python
 
-    S3_HEADERS = {
+    FLASKS3_HEADERS = {
         'Expires': 'Thu, 15 Apr 2010 20:00:00 GMT',
         'Cache-Control': 'max-age=86400',
     }
@@ -180,7 +180,7 @@ uploading assets to S3.
 `FLASKS3_CDN_DOMAIN`        AWS makes it easy to attach CloudFront to an S3
                             bucket. If you want to use this or another CDN,
                             set the base domain here. This is distinct from the
-                            `S3_BUCKET_DOMAIN` since it will not include the
+                            `FLASKS3_BUCKET_DOMAIN` since it will not include the
                             bucket name in the base url.
 `FLASKS3_BUCKET_NAME`       The desired name for your Amazon S3 bucket. Note:
                             the name will be visible in all your assets' URLs.
@@ -201,17 +201,16 @@ uploading assets to S3.
                             `flask.url_for`.
                             **Default:** `True`
                             **Note**: if you run your application in `debug`_
-                            mode (and `USE_S3_DEBUG` is `False` - see next
-                            item), `USE_S3` will be changed to `False`. This
-                            allows the `USE_S3` config variable to be the
-                            definitive check as to whether `flask_s3.url_for`
+                            mode (and `FLASKS3_DEBUG` is `False` - see next
+                            item), `FLASKS3_ACTIVE` will be changed to `False`.
+                            This allows the `FLASKS3_ACTIVE` config variable to be the definitive check as to whether `flask_s3.url_for`
                             is overriding `flask.url_for`.
 `FLASKS3_DEBUG`             By default, Flask-S3 will be switched off when
                             running your application in `debug`_ mode, so that
                             your templates include static asset locations
                             specified by `flask.url_for`. If you wish to enable
                             Flask-S3 in debug mode, set this value to `True`.
-                            **Note**: if `USE_S3` is set to `False` then
+                            **Note**: if `FLASKS3_ACTIVE` is set to `False` then
                             templates will always include asset locations
                             specified by `flask.url_for`.
 `FLASKS3_HEADERS`           Sets custom headers to be sent with each file to S3.
@@ -228,17 +227,17 @@ uploading assets to S3.
 `FLASKS3_ONLY_MODIFIED`     Only upload files that have been modified since last
                             upload to S3. SHA-1 file hashes are used to compute
                             file changes. You can delete `.file-hashes` from
-                            your S3 bucket to force all files to upload again.ad.
+                            your S3 bucket to force all files to upload again.
 `FLASKS3_GZIP`              Compress all assets using GZIP and set the
                             corresponding Content-Type and Content-Encoding
                             headers on the S3 files.
 `FLASKS3_GZIP_ONLY_EXTS`    A list of file extensions that should be gzipped.
-                            `FLASKS3_GZIP` should be `True` for this to take effect.
+                            ``FLASKS3_GZIP`` should be ``True`` for this to take effect.
                             If mentioned and non-empty, then only files with the
                             specified extensions are gzipped.
                             Defaults to empty list, meaning all files will be
                             gzipped.
-                            Eg:- `['.js', '.css']` will gzip only js and css files.
+                            Eg:- ``['.js', '.css']`` will gzip only js and css files.
 `FLASKS3_FORCE_MIMETYPE`    Always set the Content-Type header on the S3 files
                             irrespective of gzipping. Defaults to `False`.
 =========================== ===================================================
