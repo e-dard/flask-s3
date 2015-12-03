@@ -37,7 +37,7 @@ header_mapping = {
     'expires': 'Expires',
 }
 
-__version__ = (0, 2, 7, "post2")
+__version__ = (0, 2, 8)
 
 def split_metadata_params(headers):
     """
@@ -194,9 +194,11 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
     """ Writes all the files inside a static folder to S3. """
     should_gzip = app.config.get('FLASKS3_GZIP')
     add_mime = app.config.get('FLASKS3_FORCE_MIMETYPE')
+    gzip_include_only = app.config.get('FLASKS3_GZIP_ONLY_EXTS')
     new_hashes = []
     static_folder_rel = _path_to_relative_url(static_folder)
     for file_path in files:
+        per_file_should_gzip = should_gzip
         asset_loc = _path_to_relative_url(file_path)
         full_key_name = _static_folder_path(static_url_loc, static_folder_rel,
                                             asset_loc)
@@ -224,10 +226,15 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                         for header, value in headers.iteritems():
                             h[header] = value
 
-            if should_gzip:
+            # check for extension, only if there are extensions provided
+            if per_file_should_gzip and gzip_include_only:
+                if os.path.splitext(file_path)[1] not in gzip_include_only:
+                    per_file_should_gzip = False
+
+            if per_file_should_gzip:
                 h["content-encoding"] = "gzip"
 
-            if add_mime or should_gzip and "content-type" not in h:
+            if add_mime or per_file_should_gzip and "content-type" not in h:
                 # When we use GZIP we have to explicitly set the content type
                 # or if the mime flag is True
                 (mimetype, encoding) = mimetypes.guess_type(file_path,
@@ -240,7 +247,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
 
             with open(file_path) as fp:
                 metadata, params = split_metadata_params(merge_two_dicts(app.config['FLASKS3_HEADERS'], h))
-                if should_gzip:
+                if per_file_should_gzip:
                     compressed = StringIO()
                     z = gzip.GzipFile(os.path.basename(file_path), 'wb', 9,
                         compressed)
@@ -464,6 +471,7 @@ class FlaskS3(object):
                     ('FLASKS3_ONLY_MODIFIED', False),
                     ('FLASKS3_URL_STYLE', 'host'),
                     ('FLASKS3_GZIP', False),
+                    ('FLASKS3_GZIP_ONLY_EXTS', []),
                     ('FLASKS3_FORCE_MIMETYPE', False)]
 
         for k, v in defaults:
