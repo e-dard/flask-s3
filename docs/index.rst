@@ -232,6 +232,13 @@ uploading assets to S3.
 `FLASKS3_GZIP`              Compress all assets using GZIP and set the
                             corresponding Content-Type and Content-Encoding
                             headers on the S3 files.
+`FLASKS3_GZIP_ONLY_EXTS`    A list of file extensions that should be gzipped.
+                            `FLASKS3_GZIP` should be `True` for this to take effect.
+                            If mentioned and non-empty, then only files with the
+                            specified extensions are gzipped.
+                            Defaults to empty list, meaning all files will be
+                            gzipped.
+                            Eg:- `['.js', '.css']` will gzip only js and css files.
 `FLASKS3_FORCE_MIMETYPE`    Always set the Content-Type header on the S3 files
                             irrespective of gzipping. Defaults to `False`.
 =========================== ===================================================
