@@ -4,6 +4,7 @@ flask-s3
 [![Build Status](https://travis-ci.org/e-dard/flask-s3.svg?branch=master)](https://travis-ci.org/e-dard/flask-s3)
 [![Coverage Status](https://coveralls.io/repos/e-dard/flask-s3/badge.svg?branch=master&service=github)](https://coveralls.io/github/e-dard/flask-s3?branch=master)
 [![Analytics](https://ga-beacon.appspot.com/UA-35880013-3/flask-s3/readme)](https://github.com/igrigorik/ga-beacon)
+[![PyPI Version](https://img.shields.io/pypi/v/Flask-S3.svg)](https://pypi.python.org/pypi/Flask-S3)
 
 Seamlessly serve the static assets of your Flask app from Amazon S3.
 

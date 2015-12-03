@@ -1,7 +1,7 @@
 flask-s3
 ========
 
-|Build Status| |Coverage Status| |Analytics|
+|Build Status| |Coverage Status| |Analytics| |PyPI Version|
 
 Seamlessly serve the static assets of your Flask app from Amazon S3.
 
@@ -38,3 +38,5 @@ The latest documentation for Flask-S3 can be found
    :target: https://coveralls.io/github/e-dard/flask-s3?branch=master
 .. |Analytics| image:: https://ga-beacon.appspot.com/UA-35880013-3/flask-s3/readme
    :target: https://github.com/igrigorik/ga-beacon
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/Flask-S3.svg
+   :target: https://pypi.python.org/pypi/Flask-S3
