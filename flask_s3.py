@@ -245,7 +245,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                     logger.warn("Unable to detect mimetype for %s" %
                         file_path)
 
-            with open(file_path) as fp:
+            with open(file_path, 'rb') as fp:
                 metadata, params = split_metadata_params(merge_two_dicts(app.config['FLASKS3_HEADERS'], h))
                 if per_file_should_gzip:
                     compressed = StringIO()
