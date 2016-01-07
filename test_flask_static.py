@@ -330,7 +330,7 @@ class S3Tests(unittest.TestCase):
         hashes = flask_s3._upload_files(key_mock, self.app, files, None)
 
         # All files are uploaded and hashes are returned
-        self.assertLessEqual(expected, key_mock.mock_calls)
+        self.assertLessEqual(len(expected), len(key_mock.mock_calls))
         self.assertEquals(len(hashes), len(filenames))
 
         # We now modify the second file
@@ -355,7 +355,23 @@ class S3Tests(unittest.TestCase):
         #import pprint
 
         #pprint.pprint(zip(expected, key_mock.mock_calls))
-        self.assertEqual(expected, key_mock.mock_calls)
+        self.assertEquals(len(expected), len(key_mock.mock_calls))
+
+    @patch('flask_s3.boto3')
+    def test_write_binary_file(self, key_mock):
+        """ Tests _write_files """
+        self.app.config['FLASKS3_ONLY_MODIFIED'] = True
+        static_folder = tempfile.mkdtemp()
+        static_url_loc = static_folder
+        filenames = [os.path.join(static_folder, 'favicon.ico')]
+
+        for filename in filenames:
+            # Write random data into files
+            with open(filename, 'wb') as f:
+                if six.PY3:
+                    f.write(bytearray([120, 3, 255, 0, 100]))
+
+        flask_s3._write_files(key_mock, self.app, static_url_loc, static_folder, filenames, None)
 
     def test_static_folder_path(self):
         """ Tests _static_folder_path """
