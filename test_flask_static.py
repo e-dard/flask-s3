@@ -373,6 +373,18 @@ class S3Tests(unittest.TestCase):
 
         flask_s3._write_files(key_mock, self.app, static_url_loc, static_folder, filenames, None)
 
+        expected = {
+            'ACL': 'public-read',
+            'Bucket': None,
+            'Metadata': {},
+            'ContentEncoding': 'gzip',
+            'Body': b'x\x03\xff\x00d',
+            'Key': filenames[0][1:],
+            'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT'}
+        name, args, kwargs = key_mock.mock_calls[0]
+
+        self.assertEquals(expected, kwargs)
+
     def test_static_folder_path(self):
         """ Tests _static_folder_path """
         inputs = [('/static', '/home/static', '/home/static/foo.css'),
