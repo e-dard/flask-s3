@@ -368,8 +368,7 @@ class S3Tests(unittest.TestCase):
         for filename in filenames:
             # Write random data into files
             with open(filename, 'wb') as f:
-                if six.PY3:
-                    f.write(bytearray([120, 3, 255, 0, 100]))
+                f.write(bytearray([120, 3, 255, 0, 100]))
 
         flask_s3._write_files(key_mock, self.app, static_url_loc, static_folder, filenames, None)
 
