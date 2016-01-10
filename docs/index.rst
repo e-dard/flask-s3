@@ -184,6 +184,11 @@ uploading assets to S3.
                             bucket name in the base url.
 `FLASKS3_BUCKET_NAME`       The desired name for your Amazon S3 bucket. Note:
                             the name will be visible in all your assets' URLs.
+`FLASKS3_REGION`            The AWS region to host the bucket in; an empty
+                            string indicates the default region should be used,
+                            which is the US Standard region. Possible location
+                            values include: `'DEFAULT'`, `'EU'`, `'USWest'`,
+                            `'APSoutheast'`
 `FLASKS3_URL_STYLE`         Set to `'host'` to use virtual-host-style URLs,
                             e.g. ``bucketname.s3.amazonaws.com``. Set to
                             `'path'` to use path-style URLs, e.g.
@@ -203,7 +208,8 @@ uploading assets to S3.
                             **Note**: if you run your application in `debug`_
                             mode (and `FLASKS3_DEBUG` is `False` - see next
                             item), `FLASKS3_ACTIVE` will be changed to `False`.
-                            This allows the `FLASKS3_ACTIVE` config variable to be the definitive check as to whether `flask_s3.url_for`
+                            This allows the `FLASKS3_ACTIVE` config variable to 
+                            be the definitive check as to whether `flask_s3.url_for`
                             is overriding `flask.url_for`.
 `FLASKS3_DEBUG`             By default, Flask-S3 will be switched off when
                             running your application in `debug`_ mode, so that
@@ -228,9 +234,10 @@ uploading assets to S3.
                             upload to S3. SHA-1 file hashes are used to compute
                             file changes. You can delete `.file-hashes` from
                             your S3 bucket to force all files to upload again.
+                            Defaults to `False`.
 `FLASKS3_GZIP`              Compress all assets using GZIP and set the
                             corresponding Content-Type and Content-Encoding
-                            headers on the S3 files.
+                            headers on the S3 files. Defaults to `False`.
 `FLASKS3_GZIP_ONLY_EXTS`    A list of file extensions that should be gzipped.
                             ``FLASKS3_GZIP`` should be ``True`` for this to take effect.
                             If mentioned and non-empty, then only files with the
