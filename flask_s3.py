@@ -370,7 +370,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
     if app.config['FLASKS3_ONLY_MODIFIED']:
         try:
             hashes_object = s3.get_object(Bucket=bucket_name, Key='.file-hashes')
-            hashes = json.loads(str(hashes_object['Body'].read()))
+            hashes = json.loads(str(hashes_object['Body'].read().decode()))
         except ClientError as e:
             logger.warn("No file hashes found: %s" % e)
             hashes = None
