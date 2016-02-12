@@ -461,7 +461,7 @@ class FlaskS3(object):
 
         :param app: the :class:`flask.Flask` application object.
         """
-        defaults = [('FLASKS3_USE_HTTP', False),
+        defaults = [('FLASKS3_USE_HTTPS', True),
                     ('FLASKS3_ACTIVE', True),
                     ('FLASKS3_DEBUG', False),
                     ('FLASKS3_BUCKET_DOMAIN', 's3.amazonaws.com'),
