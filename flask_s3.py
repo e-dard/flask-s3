@@ -39,6 +39,15 @@ header_mapping = {
 
 __version__ = (0, 2, 10)
 
+
+def _get_statics_prefix(app):
+    """
+    Get the complete prefix that should be used by static files.
+    """
+    upload_prefix = app.config.get('FLASKS3_PREFIX', '')
+    return '/%s' % upload_prefix.lstrip('/').rstrip('/')
+
+
 def split_metadata_params(headers):
     """
     Given a dict of headers for s3, seperates those that are boto3
@@ -122,6 +131,10 @@ def url_for(endpoint, **values):
 
         if app.config['FLASKS3_CDN_DOMAIN']:
             bucket_path = '%s' % app.config['FLASKS3_CDN_DOMAIN']
+
+        # Both S3 and CDN urls should use the prefix if it exists
+        bucket_path += _get_statics_prefix(app).rstrip('/')
+
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
         return urls.build(endpoint, values=values, force_external=True)
     return flask_url_for(endpoint, **values)
@@ -271,9 +284,11 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
 
 def _upload_files(s3, app, files_, bucket, hashes=None):
     new_hashes = []
+    prefix = _get_statics_prefix(app)
     for (static_folder, static_url), names in six.iteritems(files_):
-        new_hashes.extend(_write_files(s3, app, static_url, static_folder, names,
-                                       bucket, hashes=hashes))
+        static_upload_url = '%s/%s' % (prefix.rstrip('/'), static_url.lstrip('/'))
+        new_hashes.extend(_write_files(s3, app, static_upload_url, static_folder,
+                                       names, bucket, hashes=hashes))
     return new_hashes
 
 
@@ -473,7 +488,9 @@ class FlaskS3(object):
                     ('FLASKS3_URL_STYLE', 'host'),
                     ('FLASKS3_GZIP', False),
                     ('FLASKS3_GZIP_ONLY_EXTS', []),
-                    ('FLASKS3_FORCE_MIMETYPE', False)]
+                    ('FLASKS3_FORCE_MIMETYPE', False),
+                    ('FLASKS3_PREFIX', '')]
+
 
         for k, v in defaults:
             app.config.setdefault(k, v)
