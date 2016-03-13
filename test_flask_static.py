@@ -182,6 +182,7 @@ class S3Tests(unittest.TestCase):
         self.app.config['FLASKS3_BUCKET_NAME'] = 'foo'
         self.app.config['FLASKS3_USE_CACHE_CONTROL'] = True
         self.app.config['FLASKS3_CACHE_CONTROL'] = 'cache instruction'
+        self.app.config['S3_CACHE_CONTROL'] = '3600'
         self.app.config['FLASKS3_HEADERS'] = {
             'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
             'Content-Encoding': 'gzip',
@@ -393,6 +394,44 @@ class S3Tests(unittest.TestCase):
                     six.u('/bar/s/a/b.css')]
         for i, e in zip(inputs, expected):
             self.assertEquals(e, flask_s3._static_folder_path(*i))
+
+    @patch('flask_s3._write_files')
+    def test__upload_uses_prefix(self, mock_write_files):
+        s3_mock = Mock()
+        local_path = '/local_path/static'
+        file_paths = ['/local_path/static/file1', '/local_path/static/file2']
+        files = {(local_path, '/static'): file_paths}
+
+        flask_s3._upload_files(s3_mock, self.app, files, 's3_bucket')
+        expected_call = call(
+            s3_mock, self.app, '/static', local_path, file_paths, 's3_bucket', hashes=None)
+        self.assertEquals(mock_write_files.call_args_list, [expected_call])
+
+        for supported_prefix in ['foo', '/foo', 'foo/', '/foo/']:
+            mock_write_files.reset_mock()
+            self.app.config['FLASKS3_PREFIX'] = supported_prefix
+            flask_s3._upload_files(s3_mock, self.app, files, 's3_bucket')
+            expected_call = call(s3_mock, self.app, '/foo/static',
+                                 local_path, file_paths, 's3_bucket', hashes=None)
+            self.assertEquals(mock_write_files.call_args_list, [expected_call])
+
+    @patch('flask_s3.current_app')
+    def test__url_for_uses_prefix(self, mock_current_app):
+        bucket_path = 'foo.s3.amazonaws.com'
+        flask_s3.FlaskS3(self.app)
+        mock_current_app.config = self.app.config
+        mock_bind = mock_current_app.url_map.bind
+
+        flask_s3.url_for('static', **{'filename': 'test_file.txt'})
+        self.assertEqual(mock_bind.call_args_list, [call(bucket_path, url_scheme='https')])
+
+        for supported_prefix in ['bar', '/bar', 'bar/', '/bar/']:
+            mock_bind.reset_mock()
+            self.app.config['FLASKS3_PREFIX'] = supported_prefix
+            flask_s3.url_for('static', **{'filename': 'test_file.txt'})
+            expected_path = '%s/%s' % (bucket_path, 'bar')
+            self.assertEqual(mock_bind.call_args_list,
+                             [call(expected_path, url_scheme='https')])
 
 
 if __name__ == '__main__':
