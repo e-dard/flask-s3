@@ -37,7 +37,7 @@ header_mapping = {
     'expires': 'Expires',
 }
 
-__version__ = (0, 2, 10)
+__version__ = (0, 2, 11)
 
 
 def _get_statics_prefix(app):
@@ -509,5 +509,5 @@ class FlaskS3(object):
         if app.config['FLASKS3_ACTIVE']:
             app.jinja_env.globals['url_for'] = url_for
         if app.config['FLASKS3_USE_CACHE_CONTROL'] and app.config.get('FLASKS3_CACHE_CONTROL'):
-            cache_control_header = app.config['S3_CACHE_CONTROL']
+            cache_control_header = app.config['FLASKS3_CACHE_CONTROL']
             app.config['FLASKS3_HEADERS']['Cache-Control'] = cache_control_header

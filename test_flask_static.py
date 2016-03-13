@@ -182,7 +182,7 @@ class S3Tests(unittest.TestCase):
         self.app.config['FLASKS3_BUCKET_NAME'] = 'foo'
         self.app.config['FLASKS3_USE_CACHE_CONTROL'] = True
         self.app.config['FLASKS3_CACHE_CONTROL'] = 'cache instruction'
-        self.app.config['S3_CACHE_CONTROL'] = '3600'
+        self.app.config['FLASKS3_CACHE_CONTROL'] = '3600'
         self.app.config['FLASKS3_HEADERS'] = {
             'Expires': 'Thu, 31 Dec 2037 23:59:59 GMT',
             'Content-Encoding': 'gzip',
