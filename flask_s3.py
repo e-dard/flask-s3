@@ -445,6 +445,9 @@ def _test_deprecation(app, config):
     if "S3_FORCE_MIMETYPE" in config:
         app.config["FLASKS3_FORCE_MIMETYPE"] = config["S3_FORCE_MIMETYPE"]
         warn.append("S3_FORCE_MIMETYPE")
+    if "S3_CACHE_CONTROL" in config:
+        app.config["FLASKS3_CACHE_CONTROL"] = config["S3_CACHE_CONTROL"]
+        warn.append("S3_CACHE_CONTROL")
 
     if warn:
         warnings.warn("Using old S3_ configs is deprecated, and will be removed in 0.3.0. Keys: {}".format(",".join(warn)),
@@ -504,5 +507,5 @@ class FlaskS3(object):
         if app.config['FLASKS3_ACTIVE']:
             app.jinja_env.globals['url_for'] = url_for
         if app.config['FLASKS3_USE_CACHE_CONTROL'] and app.config.get('FLASKS3_CACHE_CONTROL'):
-            cache_control_header = app.config['S3_CACHE_CONTROL']
+            cache_control_header = app.config['FLASKS3_CACHE_CONTROL']
             app.config['FLASKS3_HEADERS']['Cache-Control'] = cache_control_header
