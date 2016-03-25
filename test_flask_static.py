@@ -395,6 +395,12 @@ class S3Tests(unittest.TestCase):
         for i, e in zip(inputs, expected):
             self.assertEquals(e, flask_s3._static_folder_path(*i))
 
+    @patch('flask_s3.boto3')
+    def test__bucket_acl_not_set(self, mock_boto3):
+        flask_s3.create_all(self.app, put_bucket_acl=False)
+        self.assertFalse(mock_boto3.client().put_bucket_acl.called,
+                         "put_bucket_acl was called!")
+
     @patch('flask_s3._write_files')
     def test__upload_uses_prefix(self, mock_write_files):
         s3_mock = Mock()
