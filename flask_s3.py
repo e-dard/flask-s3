@@ -294,7 +294,7 @@ def _upload_files(s3, app, files_, bucket, hashes=None):
 
 def create_all(app, user=None, password=None, bucket_name=None,
                location=None, include_hidden=False,
-               filepath_filter_regex=None):
+               filepath_filter_regex=None, put_bucket_acl=True):
     """
     Uploads of the static assets associated with a Flask application to
     Amazon S3.
@@ -348,6 +348,10 @@ def create_all(app, user=None, password=None, bucket_name=None,
         store, set to r'^css'.
     :type filepath_filter_regex: `basestring` or None
 
+    :param put_bucket_acl: by default Flask-S3 will set the bucket ACL
+        to public. Set this to false to leave the policy unchanged.
+    :type put_bucket_acl: `bool`
+
     .. _bucket restrictions: http://docs.amazonwebservices.com/AmazonS3\
     /latest/dev/BucketRestrictions.html
 
@@ -380,7 +384,8 @@ def create_all(app, user=None, password=None, bucket_name=None,
         else:
             raise
 
-    s3.put_bucket_acl(Bucket=bucket_name, ACL='public-read')
+    if put_bucket_acl:
+        s3.put_bucket_acl(Bucket=bucket_name, ACL='public-read')
 
     if app.config['FLASKS3_ONLY_MODIFIED']:
         try:
