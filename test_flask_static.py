@@ -198,6 +198,15 @@ class S3Tests(unittest.TestCase):
         expected = [six.u('/foo'), six.u('/pref'), six.u('/pref/b/bar'), six.u('')]
         self.assertEquals(expected, [flask_s3._bp_static_url(x) for x in bps])
 
+    def test__cache_config(self):
+        """ Test that cache headers are set correctly. """
+        new_app = Flask("test_cache_param")
+        new_app.config['FLASKS3_USE_CACHE_CONTROL'] = True
+        new_app.config['FLASKS3_CACHE_CONTROL'] = '3600'
+        flask_s3.FlaskS3(new_app)
+        expected = {'Cache-Control': '3600'}
+        self.assertEqual(expected, new_app.config['FLASKS3_HEADERS'])
+
     @patch('os.walk')
     @patch('os.path.isdir')
     def test__gather_files(self, path_mock, os_mock):
