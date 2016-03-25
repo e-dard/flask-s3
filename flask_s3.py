@@ -37,7 +37,7 @@ header_mapping = {
     'expires': 'Expires',
 }
 
-__version__ = (0, 2, 11)
+__version__ = (0, 2, 12)
 
 
 def _get_statics_prefix(app):
