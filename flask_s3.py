@@ -247,7 +247,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
             if per_file_should_gzip:
                 h["content-encoding"] = "gzip"
 
-            if add_mime or per_file_should_gzip and "content-type" not in h:
+            if (add_mime or per_file_should_gzip) and "content-type" not in h:
                 # When we use GZIP we have to explicitly set the content type
                 # or if the mime flag is True
                 (mimetype, encoding) = mimetypes.guess_type(file_path,
