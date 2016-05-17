@@ -234,9 +234,9 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
             # configured regular expressions.
             filepath_headers = app.config.get('FLASKS3_FILEPATH_HEADERS')
             if filepath_headers:
-                for filepath_regex, headers in filepath_headers.iteritems():
+                for filepath_regex, headers in six.iteritems(filepath_headers):
                     if re.search(filepath_regex, file_path):
-                        for header, value in headers.iteritems():
+                        for header, value in six.iteritems(headers):
                             h[header] = value
 
             # check for extension, only if there are extensions provided
