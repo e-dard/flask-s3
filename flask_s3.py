@@ -7,7 +7,6 @@ import gzip
 
 import warnings
 
-
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -20,10 +19,9 @@ import boto3.exceptions
 from botocore.exceptions import ClientError
 from flask import current_app
 from flask import url_for as flask_url_for
+import six
 
 logger = logging.getLogger('flask_s3')
-
-import six
 
 # Mapping for Header names to S3 parameters
 header_mapping = {
@@ -85,6 +83,37 @@ def hash_file(filename):
     return hasher.hexdigest()
 
 
+def _get_bucket_name(**values):
+    """
+    Generates the bucket name for url_for.
+    """
+    app = current_app
+    # manage other special values, all have no meaning for static urls
+    values.pop('_external', False)  # external has no meaning here
+    values.pop('_anchor', None)  # anchor as well
+    values.pop('_method', None)  # method too
+
+    if app.config['FLASKS3_URL_STYLE'] == 'host':
+        url_format = '{bucket_name}.{bucket_domain}'
+    elif app.config['FLASKS3_URL_STYLE'] == 'path':
+        url_format = '{bucket_domain}/{bucket_name}'
+    else:
+        raise ValueError('Invalid S3 URL style: "{}"'.format(app.config['FLASKS3_URL_STYLE']))
+
+    if app.config['FLASKS3_CDN_DOMAIN']:
+        bucket_path = '{}'.format(app.config['FLASKS3_CDN_DOMAIN'])
+
+    else:
+        bucket_path = url_format.format(
+            bucket_name=app.config['FLASKS3_BUCKET_NAME'],
+            bucket_domain=app.config['FLASKS3_BUCKET_DOMAIN'],
+        )
+
+    bucket_path += _get_statics_prefix(app).rstrip('/')
+
+    return bucket_path, values
+
+
 def url_for(endpoint, **values):
     """
     Generates a URL to the given endpoint.
@@ -109,34 +138,15 @@ def url_for(endpoint, **values):
         scheme = 'https'
         if not app.config.get("FLASKS3_USE_HTTPS", True):
             scheme = 'http'
+
         # allow per url override for scheme
         scheme = values.pop('_scheme', scheme)
-        # manage other special values, all have no meaning for static urls
-        values.pop('_external', False)  # external has no meaning here
-        values.pop('_anchor', None)  # anchor as well
-        values.pop('_method', None)  # method too
 
-        if app.config['FLASKS3_URL_STYLE'] == 'host':
-            url_format = '%(bucket_name)s.%(bucket_domain)s'
-        elif app.config['FLASKS3_URL_STYLE'] == 'path':
-            url_format = '%(bucket_domain)s/%(bucket_name)s'
-        else:
-            raise ValueError('Invalid S3 URL style: "%s"'
-                             % app.config['FLASKS3_URL_STYLE'])
-
-        bucket_path = url_format % {
-            'bucket_name': app.config['FLASKS3_BUCKET_NAME'],
-            'bucket_domain': app.config['FLASKS3_BUCKET_DOMAIN'],
-        }
-
-        if app.config['FLASKS3_CDN_DOMAIN']:
-            bucket_path = '%s' % app.config['FLASKS3_CDN_DOMAIN']
-
-        # Both S3 and CDN urls should use the prefix if it exists
-        bucket_path += _get_statics_prefix(app).rstrip('/')
+        bucket_path, values = _get_bucket_name(**values)
 
         urls = app.url_map.bind(bucket_path, url_scheme=scheme)
-        return urls.build(endpoint, values=values, force_external=True)
+        built = urls.build(endpoint, values=values, force_external=True)
+        return built
     return flask_url_for(endpoint, **values)
 
 
@@ -161,11 +171,11 @@ def _gather_files(app, hidden, filepath_filter_regex=None):
         else:
             logger.debug("Checking static folder: %s" % static_folder)
         for root, _, files in os.walk(static_folder):
-            relative_folder = re.sub(r'^\/',
+            relative_folder = re.sub(r'^/',
                                      '',
                                      root.replace(static_folder, ''))
 
-            files = [os.path.join(root, x) \
+            files = [os.path.join(root, x)
                      for x in files if (
                          (hidden or x[0] != '.') and
                          # Skip this file if the filter regex is
@@ -251,12 +261,12 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                 # When we use GZIP we have to explicitly set the content type
                 # or if the mime flag is True
                 (mimetype, encoding) = mimetypes.guess_type(file_path,
-                    False)
+                                                            False)
                 if mimetype:
                     h["content-type"] = mimetype
                 else:
                     logger.warn("Unable to detect mimetype for %s" %
-                        file_path)
+                                file_path)
 
             file_mode = 'rb' if six.PY3 else 'r'
             with open(file_path, file_mode) as fp:
@@ -264,7 +274,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                 if per_file_should_gzip:
                     compressed = StringIO()
                     z = gzip.GzipFile(os.path.basename(file_path), 'wb', 9,
-                        compressed)
+                                      compressed)
                     z.write(fp.read())
                     z.close()
 
@@ -455,9 +465,9 @@ def _test_deprecation(app, config):
         warn.append("S3_CACHE_CONTROL")
 
     if warn:
-        warnings.warn("Using old S3_ configs is deprecated, and will be removed in 0.3.0. Keys: {}".format(",".join(warn)),
-                DeprecationWarning)
-
+        warnings.warn(
+            "Using old S3_ configs is deprecated, and will be removed in 0.3.0. Keys: {}".format(",".join(warn)),
+            DeprecationWarning)
 
 
 class FlaskS3(object):
@@ -498,7 +508,6 @@ class FlaskS3(object):
                     ('FLASKS3_GZIP_ONLY_EXTS', []),
                     ('FLASKS3_FORCE_MIMETYPE', False),
                     ('FLASKS3_PREFIX', '')]
-
 
         for k, v in defaults:
             app.config.setdefault(k, v)
