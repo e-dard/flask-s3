@@ -28,6 +28,6 @@ Or, install the latest development version:
 
 Documentation
 -------------
-The latest documentation for Flask-S3 can be found [here](https://flask-s3.readthedocs.org/en/latest/).
+The latest documentation for Flask-S3 can be found [here](https://flask-s3.readthedocs.io/en/latest/).
 
 
