@@ -30,7 +30,7 @@ Documentation
 -------------
 
 The latest documentation for Flask-S3 can be found
-`here <https://flask-s3.readthedocs.org/en/latest/>`__.
+`here <https://flask-s3.readthedocs.io/en/latest/>`__.
 
 .. |Build Status| image:: https://travis-ci.org/e-dard/flask-s3.svg?branch=master
    :target: https://travis-ci.org/e-dard/flask-s3
