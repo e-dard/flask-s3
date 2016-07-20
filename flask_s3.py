@@ -35,7 +35,7 @@ header_mapping = {
     'expires': 'Expires',
 }
 
-__version__ = (0, 2, 15)
+__version__ = (0, 3, 0)
 
 
 def _get_statics_prefix(app):
@@ -417,59 +417,6 @@ def create_all(app, user=None, password=None, bucket_name=None,
     else:
         _upload_files(s3, app, all_files, bucket_name)
 
-
-def _test_deprecation(app, config):
-    """
-    Tests deprecation of old-style config headers.
-    """
-    warn = []
-    # Ugly thing here:
-    if "S3_BUCKET_DOMAIN" in config:
-        app.config["FLASKS3_BUCKET_DOMAIN"] = config["S3_BUCKET_DOMAIN"]
-        warn.append("S3_BUCKET_DOMAIN")
-    if "S3_CDN_DOMAIN" in config:
-        app.config["FLASKS3_CDN_DOMAIN"] = config["FLASKS3_CDN_DOMAIN"]
-        warn.append("S3_CDN_DOMAIN")
-    if "S3_BUCKET_NAME" in config:
-        app.config["FLASKS3_BUCKET_NAME"] = config["S3_BUCKET_NAME"]
-        warn.append("S3_BUCKET_NAME")
-    if "S3_URL_STYLE" in config:
-        app.config["FLASKS3_URL_STYLE"] = config["S3_URL_STYLE"]
-        warn.append("S3_URL_STYLE")
-    if "S3_USE_HTTPS" in config:
-        app.config["FLASKS3_USE_HTTPS"] = config["S3_USE_HTTPS"]
-        warn.append("S3_USE_HTTPS")
-    if "USE_S3" in config:
-        app.config["FLASKS3_ACTIVE"] = config["USE_S3"]
-        warn.append("USE_S3")
-    if "USE_S3_DEBUG" in config:
-        app.config["FLASKS3_DEBUG"] = config["USE_S3_DEBUG"]
-        warn.append("USE_S3_DEBUG")
-    if "S3_HEADERS" in config:
-        app.config["FLASKS3_HEADERS"] = config["S3_HEADERS"]
-        warn.append("S3_HEADERS")
-    if "S3_FILEPATH_HEADERS" in config:
-        config["FLASKS3_FILEPATH_HEADERS"] = config["S3_FILEPATH_HEADERS"]
-        warn.append("S3_FILEPATH_HEADERS")
-    if "S3_ONLY_MODIFIED" in config:
-        app.config["FLASKS3_ONLY_MODIFIED"] = config["S3_ONLY_MODIFIED"]
-        warn.append("S3_ONLY_MODIFIED")
-    if "S3_GZIP" in config:
-        app.config["FLASKS3_GZIP"] = config["S3_GZIP"]
-        warn.append("S3_GZIP")
-    if "S3_FORCE_MIMETYPE" in config:
-        app.config["FLASKS3_FORCE_MIMETYPE"] = config["S3_FORCE_MIMETYPE"]
-        warn.append("S3_FORCE_MIMETYPE")
-    if "S3_CACHE_CONTROL" in config:
-        app.config["FLASKS3_CACHE_CONTROL"] = config["S3_CACHE_CONTROL"]
-        warn.append("S3_CACHE_CONTROL")
-
-    if warn:
-        warnings.warn(
-            "Using old S3_ configs is deprecated, and will be removed in 0.3.0. Keys: {}".format(",".join(warn)),
-            DeprecationWarning)
-
-
 class FlaskS3(object):
     """
     The FlaskS3 object allows your application to use Flask-S3.
@@ -511,9 +458,6 @@ class FlaskS3(object):
 
         for k, v in defaults:
             app.config.setdefault(k, v)
-
-        if __version__[0:2] < (0, 3, 0):
-            _test_deprecation(app, app.config)
 
         if app.debug and not app.config['FLASKS3_DEBUG']:
             app.config['FLASKS3_ACTIVE'] = False
