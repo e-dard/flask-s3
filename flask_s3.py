@@ -35,6 +35,21 @@ header_mapping = {
     'expires': 'Expires',
 }
 
+DEFAULT_SETTINGS = {'FLASKS3_USE_HTTPS': True,
+                    'FLASKS3_ACTIVE': True,
+                    'FLASKS3_DEBUG': False,
+                    'FLASKS3_BUCKET_DOMAIN': 's3.amazonaws.com',
+                    'FLASKS3_CDN_DOMAIN': '',
+                    'FLASKS3_USE_CACHE_CONTROL': False,
+                    'FLASKS3_HEADERS': {},
+                    'FLASKS3_FILEPATH_HEADERS': {},
+                    'FLASKS3_ONLY_MODIFIED': False,
+                    'FLASKS3_URL_STYLE': 'host',
+                    'FLASKS3_GZIP': False,
+                    'FLASKS3_GZIP_ONLY_EXTS': [],
+                    'FLASKS3_FORCE_MIMETYPE': False,
+                    'FLASKS3_PREFIX': ''}
+
 __version__ = (0, 3, 0)
 
 
@@ -93,20 +108,21 @@ def _get_bucket_name(**values):
     values.pop('_anchor', None)  # anchor as well
     values.pop('_method', None)  # method too
 
-    if app.config['FLASKS3_URL_STYLE'] == 'host':
+    url_style = get_setting('FLASKS3_URL_STYLE', app)
+    if url_style == 'host':
         url_format = '{bucket_name}.{bucket_domain}'
-    elif app.config['FLASKS3_URL_STYLE'] == 'path':
+    elif url_style == 'path':
         url_format = '{bucket_domain}/{bucket_name}'
     else:
-        raise ValueError('Invalid S3 URL style: "{}"'.format(app.config['FLASKS3_URL_STYLE']))
+        raise ValueError('Invalid S3 URL style: "{}"'.format(url_style))
 
-    if app.config['FLASKS3_CDN_DOMAIN']:
-        bucket_path = '{}'.format(app.config['FLASKS3_CDN_DOMAIN'])
+    if get_setting('FLASKS3_CDN_DOMAIN', app):
+        bucket_path = '{}'.format(get_setting('FLASKS3_CDN_DOMAIN', app))
 
     else:
         bucket_path = url_format.format(
-            bucket_name=app.config['FLASKS3_BUCKET_NAME'],
-            bucket_domain=app.config['FLASKS3_BUCKET_DOMAIN'],
+            bucket_name=get_setting('FLASKS3_BUCKET_NAME', app),
+            bucket_domain=get_setting('FLASKS3_BUCKET_DOMAIN', app),
         )
 
     bucket_path += _get_statics_prefix(app).rstrip('/')
@@ -270,7 +286,8 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
 
             file_mode = 'rb' if six.PY3 else 'r'
             with open(file_path, file_mode) as fp:
-                metadata, params = split_metadata_params(merge_two_dicts(app.config['FLASKS3_HEADERS'], h))
+                merged_dicts = merge_two_dicts(get_setting('FLASKS3_HEADERS', app), h)
+                metadata, params = split_metadata_params(merged_dicts)
                 if per_file_should_gzip:
                     compressed = StringIO()
                     z = gzip.GzipFile(os.path.basename(file_path), 'wb', 9,
@@ -300,6 +317,21 @@ def _upload_files(s3, app, files_, bucket, hashes=None):
         new_hashes.extend(_write_files(s3, app, static_upload_url, static_folder,
                                        names, bucket, hashes=hashes))
     return new_hashes
+
+
+def get_setting(name, app=None):
+    """
+    Returns the value for `name` settings (looks into `app` config, and into
+    DEFAULT_SETTINGS). Returns None if not set.
+
+    :param name: (str) name of a setting (e.g. FLASKS3_URL_STYLE)
+
+    :param app: Flask app instance
+
+    :return: setting value or None
+    """
+    default_value = DEFAULT_SETTINGS.get(name, None)
+    return app.config.get(name, default_value) if app else default_value
 
 
 def create_all(app, user=None, password=None, bucket_name=None,
@@ -397,7 +429,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
     if put_bucket_acl:
         s3.put_bucket_acl(Bucket=bucket_name, ACL='public-read')
 
-    if app.config['FLASKS3_ONLY_MODIFIED']:
+    if get_setting('FLASKS3_ONLY_MODIFIED', app):
         try:
             hashes_object = s3.get_object(Bucket=bucket_name, Key='.file-hashes')
             hashes = json.loads(str(hashes_object['Body'].read().decode()))
@@ -441,29 +473,15 @@ class FlaskS3(object):
 
         :param app: the :class:`flask.Flask` application object.
         """
-        defaults = [('FLASKS3_USE_HTTPS', True),
-                    ('FLASKS3_ACTIVE', True),
-                    ('FLASKS3_DEBUG', False),
-                    ('FLASKS3_BUCKET_DOMAIN', 's3.amazonaws.com'),
-                    ('FLASKS3_CDN_DOMAIN', ''),
-                    ('FLASKS3_USE_CACHE_CONTROL', False),
-                    ('FLASKS3_HEADERS', {}),
-                    ('FLASKS3_FILEPATH_HEADERS', {}),
-                    ('FLASKS3_ONLY_MODIFIED', False),
-                    ('FLASKS3_URL_STYLE', 'host'),
-                    ('FLASKS3_GZIP', False),
-                    ('FLASKS3_GZIP_ONLY_EXTS', []),
-                    ('FLASKS3_FORCE_MIMETYPE', False),
-                    ('FLASKS3_PREFIX', '')]
 
-        for k, v in defaults:
+        for k, v in DEFAULT_SETTINGS.items():
             app.config.setdefault(k, v)
 
-        if app.debug and not app.config['FLASKS3_DEBUG']:
+        if app.debug and not get_setting('FLASKS3_DEBUG', app):
             app.config['FLASKS3_ACTIVE'] = False
 
-        if app.config['FLASKS3_ACTIVE']:
+        if get_setting('FLASKS3_ACTIVE', app):
             app.jinja_env.globals['url_for'] = url_for
-        if app.config['FLASKS3_USE_CACHE_CONTROL'] and app.config.get('FLASKS3_CACHE_CONTROL'):
-            cache_control_header = app.config['FLASKS3_CACHE_CONTROL']
+        if get_setting('FLASKS3_USE_CACHE_CONTROL', app) and app.config.get('FLASKS3_CACHE_CONTROL'):
+            cache_control_header = get_setting('FLASKS3_CACHE_CONTROL', app)
             app.config['FLASKS3_HEADERS']['Cache-Control'] = cache_control_header
