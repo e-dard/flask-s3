@@ -50,7 +50,7 @@ DEFAULT_SETTINGS = {'FLASKS3_USE_HTTPS': True,
                     'FLASKS3_FORCE_MIMETYPE': False,
                     'FLASKS3_PREFIX': ''}
 
-__version__ = (0, 3, 0)
+__version__ = (0, 3, 1)
 
 
 def _get_statics_prefix(app):
