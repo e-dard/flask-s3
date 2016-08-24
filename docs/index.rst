@@ -140,7 +140,7 @@ that ``mybucketname`` is the name of your S3 bucket, and you have chosen
 to have assets served over HTTPS.
 
 Setting Custom HTTP Headers
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To set custom HTTP headers on the files served from S3 specify what
 headers you want to use with the `FLASKS3_HEADERS` option.
@@ -167,7 +167,7 @@ settings to control the behaviour of Flask-S3. None of the settings are
 required, but if not present, some will need to be provided when
 uploading assets to S3.
 
-=========================== ===================================================
+=========================== =============================================================
 `AWS_ACCESS_KEY_ID`         Your AWS access key. This does not need to be
                             stored in your configuration if you choose to pass
                             it directly when uploading your assets.
@@ -247,7 +247,7 @@ uploading assets to S3.
                             Eg:- ``['.js', '.css']`` will gzip only js and css files.
 `FLASKS3_FORCE_MIMETYPE`    Always set the Content-Type header on the S3 files
                             irrespective of gzipping. Defaults to `False`.
-=========================== ===================================================
+=========================== =============================================================
 
 .. _debug: http://flask.pocoo.org/docs/config/#configuration-basics
 
