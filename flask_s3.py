@@ -375,8 +375,11 @@ def create_all(app, user=None, password=None, bucket_name=None,
     :param location: the AWS region to host the bucket in; an empty
                      string indicates the default region should be used,
                      which is the US Standard region. Possible location
-                     values include: `'DEFAULT'`, `'EU'`, `'USWest'`,
-                     `'APSoutheast'`
+                     values include: `'DEFAULT'`, `'EU'`, `'us-east-1'`,
+                     `'us-west-1'`, `'us-west-2'`, `'ap-south-1'`,
+                     `'ap-northeast-2'`, `'ap-southeast-1'`,
+                     `'ap-southeast-2'`, `'ap-northeast-1'`,
+                     `'eu-central-1'`, `'eu-west-1'`,  `'sa-east-1'`
     :type location: `basestring` or None
 
     :param include_hidden: by default Flask-S3 will not upload hidden
