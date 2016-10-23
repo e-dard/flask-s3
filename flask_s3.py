@@ -289,7 +289,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                 merged_dicts = merge_two_dicts(get_setting('FLASKS3_HEADERS', app), h)
                 metadata, params = split_metadata_params(merged_dicts)
                 if per_file_should_gzip:
-                    compressed = StringIO()
+                    compressed = six.BytesIO()
                     z = gzip.GzipFile(os.path.basename(file_path), 'wb', 9,
                                       compressed)
                     z.write(fp.read())
