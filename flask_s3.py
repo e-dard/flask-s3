@@ -45,6 +45,7 @@ DEFAULT_SETTINGS = {'FLASKS3_USE_HTTPS': True,
                     'FLASKS3_FILEPATH_HEADERS': {},
                     'FLASKS3_ONLY_MODIFIED': False,
                     'FLASKS3_URL_STYLE': 'host',
+                    'FLASKS3_ENDPOINT_URL': None,
                     'FLASKS3_GZIP': False,
                     'FLASKS3_GZIP_ONLY_EXTS': [],
                     'FLASKS3_FORCE_MIMETYPE': False,
@@ -407,6 +408,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
     if not bucket_name:
         raise ValueError("No bucket name provided.")
     location = location or app.config.get('FLASKS3_REGION')
+    endpoint_url = app.config.get('FLASKS3_ENDPOINT_URL')
 
     # build list of static files
     all_files = _gather_files(app, include_hidden,
@@ -415,6 +417,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
 
     # connect to s3
     s3 = boto3.client("s3",
+                      endpoint_url=endpoint_url,
                       region_name=location or None,
                       aws_access_key_id=user,
                       aws_secret_access_key=password)
