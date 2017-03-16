@@ -174,6 +174,25 @@ class UrlTests(unittest.TestCase):
         ufs = "{{url_for('static', filename='bah.js')}}"
         self.assertRaises(ValueError, self.client_get, six.b(ufs))
 
+class S3TestsWithCustomEndpoint(unittest.TestCase):
+    def setUp(self):
+        self.app = Flask(__name__)
+        self.app.testing = True
+        self.app.config['FLASKS3_BUCKET_NAME'] = 'thebucket'
+        self.app.config['FLASKS3_REGION'] = 'theregion'
+        self.app.config['AWS_ACCESS_KEY_ID'] = 'thekeyid'
+        self.app.config['AWS_SECRET_ACCESS_KEY'] = 'thesecretkey'
+        self.app.config['FLASKS3_ENDPOINT_URL'] = 'https://minio.local:9000/'
+
+    @patch('flask_s3.boto3')
+    def test__custom_endpoint_is_passed_to_boto(self, mock_boto3):
+        flask_s3.create_all(self.app)
+
+        mock_boto3.client.assert_called_once_with("s3",
+                        region_name='theregion',
+                        aws_access_key_id='thekeyid',
+                        aws_secret_access_key='thesecretkey',
+                        endpoint_url='https://minio.local:9000/')
 
 class S3Tests(unittest.TestCase):
     def setUp(self):
