@@ -177,11 +177,7 @@ def _bp_static_url(blueprint):
 def _gather_files(app, hidden, filepath_filter_regex=None, repo_path=None):
     """ Gets all files in static folders and returns in dict."""
 
-    changed_files = None
-    if repo_path:
-        repo = Repo(repo_path)
-        diff = repo.git.diff('HEAD~1..HEAD', name_only=True)
-        changed_files = diff.split('\n')
+    changed_files = _get_last_commited_files(repo_path)
 
     dirs = [(six.u(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
@@ -215,6 +211,11 @@ def _gather_files(app, hidden, filepath_filter_regex=None, repo_path=None):
                 valid_files[(static_folder, static_url_loc)].extend(files)
     return valid_files
 
+def _get_last_commited_files(repo_path):
+    repo = Repo(repo_path)
+    last_commit = repo.iter_commits().next()
+    last_commit_parent = last_commit.parents[0]
+    return [x.b_path for x in last_commit.diff(last_commit_parent)]
 
 def _path_to_relative_url(path):
     """ Converts a folder and filename into a ralative url path """
