@@ -42,7 +42,8 @@ setup(
     install_requires=[
         'Flask',
         'Boto3>=1.1.1',
-        'six'
+        'six',
+        'gitpython'
     ],
     tests_require=['nose', 'mock'],
     classifiers=[
