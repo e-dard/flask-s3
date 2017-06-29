@@ -212,6 +212,7 @@ def _gather_files(app, hidden, filepath_filter_regex=None, repo_path=None):
     return valid_files
 
 def _get_last_commited_files(repo_path):
+    from git import Repo
     repo = Repo(repo_path)
     last_commit = repo.iter_commits().next()
     last_commit_parent = last_commit.parents[0]
@@ -429,7 +430,6 @@ def _process(app, user=None, password=None, bucket_name=None,
     /latest/dev/BucketRestrictions.html
 
     """
-    from git import Repo
     user = user or app.config.get('AWS_ACCESS_KEY_ID')
     password = password or app.config.get('AWS_SECRET_ACCESS_KEY')
     bucket_name = bucket_name or app.config.get('FLASKS3_BUCKET_NAME')
