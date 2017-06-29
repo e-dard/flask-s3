@@ -20,6 +20,7 @@ from botocore.exceptions import ClientError
 from flask import current_app
 from flask import url_for as flask_url_for
 import six
+from git import Repo
 
 logger = logging.getLogger('flask_s3')
 
@@ -173,8 +174,15 @@ def _bp_static_url(blueprint):
     return u
 
 
-def _gather_files(app, hidden, filepath_filter_regex=None):
+def _gather_files(app, hidden, filepath_filter_regex=None, repo_path=None):
     """ Gets all files in static folders and returns in dict."""
+
+    changed_files = None
+    if repo_path:
+        repo = Repo(repo_path)
+        diff = repo.git.diff('HEAD~1..HEAD', name_only=True)
+        changed_files = diff.split('\n')
+
     dirs = [(six.u(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
         blueprints = app.blueprints.values()
@@ -200,7 +208,9 @@ def _gather_files(app, hidden, filepath_filter_regex=None):
                          # negative match.
                          (filepath_filter_regex == None or re.search(
                              filepath_filter_regex,
-                             os.path.join(relative_folder, x))))]
+                             os.path.join(relative_folder, x))) and
+                         (changed_files is None or os.path.join(relative_folder, x) in changed_files)
+                     )]
             if files:
                 valid_files[(static_folder, static_url_loc)].extend(files)
     return valid_files
@@ -338,6 +348,22 @@ def get_setting(name, app=None):
 def create_all(app, user=None, password=None, bucket_name=None,
                location=None, include_hidden=False,
                filepath_filter_regex=None, put_bucket_acl=True):
+    _process(app, user=None, password=None, bucket_name=None,
+             location=None, include_hidden=False,
+             filepath_filter_regex=None, put_bucket_acl=True)
+
+
+def update(app, user=None, password=None, bucket_name=None,
+           location=None, include_hidden=False,
+           filepath_filter_regex=None, put_bucket_acl=True, repo_path=None):
+    _process(app, user=None, password=None, bucket_name=None,
+             location=None, include_hidden=False,
+             filepath_filter_regex=None, put_bucket_acl=True, repo_path=repo_path)
+
+
+def _process(app, user=None, password=None, bucket_name=None,
+             location=None, include_hidden=False,
+             filepath_filter_regex=None, put_bucket_acl=True, repo_path=None):
     """
     Uploads of the static assets associated with a Flask application to
     Amazon S3.
@@ -412,7 +438,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
 
     # build list of static files
     all_files = _gather_files(app, include_hidden,
-                              filepath_filter_regex=filepath_filter_regex)
+                              filepath_filter_regex=filepath_filter_regex, repo_path=repo_path)
     logger.debug("All valid files: %s" % all_files)
 
     # connect to s3
@@ -454,6 +480,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
             logger.warn("Unable to upload file hashes: %s" % e)
     else:
         _upload_files(s3, app, all_files, bucket_name)
+
 
 class FlaskS3(object):
     """

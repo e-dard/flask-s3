@@ -5,3 +5,5 @@
 dist
 /.idea
 _build
+env
+env/
