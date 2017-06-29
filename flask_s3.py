@@ -205,7 +205,7 @@ def _gather_files(app, hidden, filepath_filter_regex=None, repo_path=None):
                          (filepath_filter_regex == None or re.search(
                              filepath_filter_regex,
                              os.path.join(relative_folder, x))) and
-                         (changed_files is None or os.path.join(relative_folder, x) in changed_files)
+                         (changed_files is None or os.path.join('static',relative_folder, x) in changed_files)
                      )]
             if files:
                 valid_files[(static_folder, static_url_loc)].extend(files)
