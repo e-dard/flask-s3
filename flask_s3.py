@@ -20,7 +20,7 @@ from botocore.exceptions import ClientError
 from flask import current_app
 from flask import url_for as flask_url_for
 import six
-from git import Repo
+
 
 logger = logging.getLogger('flask_s3')
 
@@ -429,6 +429,7 @@ def _process(app, user=None, password=None, bucket_name=None,
     /latest/dev/BucketRestrictions.html
 
     """
+    from git import Repo
     user = user or app.config.get('AWS_ACCESS_KEY_ID')
     password = password or app.config.get('AWS_SECRET_ACCESS_KEY')
     bucket_name = bucket_name or app.config.get('FLASKS3_BUCKET_NAME')
