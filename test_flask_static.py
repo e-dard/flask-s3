@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from itertools import count
 
 try:
     from unittest.mock import Mock, patch, call, mock_open
@@ -327,13 +328,7 @@ class S3Tests(unittest.TestCase):
         filenames = [os.path.join(static_folder, f) for f in ['foo.css', 'bar.css']]
         expected = []
 
-        def IntIterator():
-            i = 0
-            while True:
-                i += 1
-                yield i
-
-        data_iter = IntIterator()
+        data_iter = count()
 
         for filename in filenames:
             # Write random data into files

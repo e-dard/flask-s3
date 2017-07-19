@@ -1,11 +1,9 @@
+import gzip
 import hashlib
 import json
 import logging
 import os
 import re
-import gzip
-
-import warnings
 
 try:
     from cStringIO import StringIO
@@ -175,7 +173,7 @@ def _bp_static_url(blueprint):
 
 def _gather_files(app, hidden, filepath_filter_regex=None):
     """ Gets all files in static folders and returns in dict."""
-    dirs = [(six.u(app.static_folder), app.static_url_path)]
+    dirs = [(six.text_type(app.static_folder), app.static_url_path)]
     if hasattr(app, 'blueprints'):
         blueprints = app.blueprints.values()
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
