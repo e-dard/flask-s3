@@ -426,7 +426,7 @@ def create_all(app, user=None, password=None, bucket_name=None,
     except ClientError as e:
         if int(e.response['Error']['Code']) == 404:
             # Create the bucket
-            bucket = s3.create_bucket(Bucket=bucket_name)
+            bucket = s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={'LocationConstraint': location})
         else:
             raise
 
