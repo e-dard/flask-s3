@@ -4,3 +4,4 @@ six
 coverage
 coveralls
 nose
+tqdm

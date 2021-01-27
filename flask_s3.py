@@ -12,6 +12,8 @@ except ImportError:
 import mimetypes
 from collections import defaultdict
 
+from tqdm import tqdm
+
 import boto3
 import boto3.exceptions
 from botocore.exceptions import ClientError
@@ -235,7 +237,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
     gzip_include_only = app.config.get('FLASKS3_GZIP_ONLY_EXTS')
     new_hashes = []
     static_folder_rel = _path_to_relative_url(static_folder)
-    for file_path in files:
+    for file_path in tqdm(files, desc="Uploading: {}".format(static_folder)):
         per_file_should_gzip = should_gzip
         asset_loc = _path_to_relative_url(file_path)
         full_key_name = _static_folder_path(static_url_loc, static_folder_rel,
