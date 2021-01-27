@@ -3,5 +3,4 @@ boto3
 six
 coverage
 coveralls
-nose
 tqdm
