@@ -1,25 +1,22 @@
-import gzip
-import hashlib
-import json
-import logging
+import io
 import os
 import re
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+import gzip
+import json
+import hashlib
+import logging
 import mimetypes
+
 from collections import defaultdict
 
-from tqdm import tqdm
 
 import boto3
 import boto3.exceptions
 from botocore.exceptions import ClientError
+
+from tqdm import tqdm
 from flask import current_app
 from flask import url_for as flask_url_for
-import six
 
 logger = logging.getLogger('flask_s3')
 
@@ -167,15 +164,13 @@ def url_for(endpoint, **values):
     return flask_url_for(endpoint, **values)
 
 
-def _bp_static_url(blueprint):
+def _bp_static_url(blueprint) -> str:
     """ builds the absolute url path for a blueprint's static folder """
-    u = six.u('%s%s' % (blueprint.url_prefix or '', blueprint.static_url_path or ''))
-    return u
-
+    return f"{blueprint.url_prefix or ''}{blueprint.static_url_path or ''}"
 
 def _gather_files(app, hidden, filepath_filter_regex=None):
     """ Gets all files in static folders and returns in dict."""
-    dirs = [(six.text_type(app.static_folder), app.static_url_path)]
+    dirs = [(app.static_folder, app.static_url_path)]
     if hasattr(app, 'blueprints'):
         blueprints = app.blueprints.values()
         bp_details = lambda x: (x.static_folder, _bp_static_url(x))
@@ -261,9 +256,9 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
             # configured regular expressions.
             filepath_headers = app.config.get('FLASKS3_FILEPATH_HEADERS')
             if filepath_headers:
-                for filepath_regex, headers in six.iteritems(filepath_headers):
+                for filepath_regex, headers in filepath_headers.items():
                     if re.search(filepath_regex, file_path):
-                        for header, value in six.iteritems(headers):
+                        for header, value in headers.items():
                             h[header] = value
 
             # check for extension, only if there are extensions provided
@@ -285,12 +280,11 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
                     logger.warn("Unable to detect mimetype for %s" %
                                 file_path)
 
-            file_mode = 'rb' if six.PY3 else 'r'
-            with open(file_path, file_mode) as fp:
+            with open(file_path, 'rb') as fp:
                 merged_dicts = merge_two_dicts(get_setting('FLASKS3_HEADERS', app), h)
                 metadata, params = split_metadata_params(merged_dicts)
                 if per_file_should_gzip:
-                    compressed = six.BytesIO()
+                    compressed = io.BytesIO()
                     z = gzip.GzipFile(os.path.basename(file_path), 'wb', 9,
                                       compressed)
                     z.write(fp.read())
@@ -313,7 +307,7 @@ def _write_files(s3, app, static_url_loc, static_folder, files, bucket,
 def _upload_files(s3, app, files_, bucket, hashes=None):
     new_hashes = []
     prefix = _get_statics_prefix(app)
-    for (static_folder, static_url), names in six.iteritems(files_):
+    for (static_folder, static_url), names in files_.items():
         static_upload_url = '%s/%s' % (prefix.rstrip('/'), static_url.lstrip('/'))
         new_hashes.extend(_write_files(s3, app, static_upload_url, static_folder,
                                        names, bucket, hashes=hashes))

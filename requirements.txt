@@ -1,6 +1,3 @@
+tqdm
 Flask
 boto3
-six
-coverage
-coveralls
-tqdm
