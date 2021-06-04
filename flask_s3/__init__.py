@@ -396,6 +396,13 @@ def create_all(app, user=None, password=None, bucket_name=None,
     """
     user = user or app.config.get('AWS_ACCESS_KEY_ID')
     password = password or app.config.get('AWS_SECRET_ACCESS_KEY')
+
+    if not user:
+        raise ValueError("you must set 'user' or 'AWS_ACCESS_KEY_ID'")
+
+    if not password:
+        raise ValueError("you must set 'password' or 'AWS_SECRET_ACCESS_KEY'")
+
     bucket_name = bucket_name or app.config.get('FLASKS3_BUCKET_NAME')
     if not bucket_name:
         raise ValueError("No bucket name provided.")
