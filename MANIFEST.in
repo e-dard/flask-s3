@@ -1,0 +1,19 @@
+include requirements.txt README.md VERSION
+
+recursive-exclude * test_*
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.pyo
+recursive-exclude * *.orig
+recursive-exclude * .DS_Store
+
+global-exclude test/*
+global-exclude __pycache__/*
+global-exclude .deps/*
+global-exclude *.pyd
+global-exclude *.pyc
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude .mailmap
+
+recursive-include * *.mist
