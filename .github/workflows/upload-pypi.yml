@@ -20,7 +20,6 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install -U pip
-          pip install twine
 
       - name: Make package
         run: |
