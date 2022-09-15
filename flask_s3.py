@@ -62,7 +62,7 @@ def _get_statics_prefix(app):
 
 def split_metadata_params(headers):
     """
-    Given a dict of headers for s3, seperates those that are boto3
+    Given a dict of headers for s3, separates those that are boto3
     parameters and those that must be metadata
     """
 
@@ -205,7 +205,7 @@ def _gather_files(app, hidden, filepath_filter_regex=None):
 
 
 def _path_to_relative_url(path):
-    """ Converts a folder and filename into a ralative url path """
+    """ Converts a folder and filename into a relative url path """
     return os.path.splitdrive(path)[1].replace('\\', '/')
 
 

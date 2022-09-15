@@ -113,7 +113,7 @@ class UrlTests(unittest.TestCase):
         Tests that if _scheme is passed in the url_for arguments, that
         scheme is used instead of configuration scheme.
         """
-        # check _scheme overriden per url
+        # check _scheme overridden per url
         ufs = "{{url_for('static', filename='bah.js', _scheme='http')}}"
         exp = 'http://foo.s3.amazonaws.com/static/bah.js'
         self.assertEquals(self.client_get(ufs).data, six.b(exp))
