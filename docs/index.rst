@@ -196,7 +196,7 @@ uploading assets to S3.
                             **Default:** `'host'`
 `FLASKS3_USE_HTTPS`         Specifies whether or not to serve your assets
                             stored in S3 over HTTPS.
-                            Can be overriden per url, by using the `_scheme`
+                            Can be overridden per url, by using the `_scheme`
                             argument as per usual Flask `url_for`.
                             **Default:** `True`
 `FLASKS3_ACTIVE`            This setting allows you to toggle whether Flask-S3
