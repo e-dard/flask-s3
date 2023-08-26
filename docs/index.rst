@@ -226,9 +226,7 @@ uploading assets to S3.
                             be used for CORS, that must be set per S3 bucket
                             using an XML config string.) E.g. to add custom
                             metadata when serving text files, set this to:
-                            ``{r'\.txt$':``
-                            ``    {'Texted-Up-By': 'Mister Foo'}``
-                            ``}``
+                            ``{r'\.txt$': {'Texted-Up-By': 'Mister Foo'} }``
                             **Default:** `{}`
 `FLASKS3_ONLY_MODIFIED`     Only upload files that have been modified since last
                             upload to S3. SHA-1 file hashes are used to compute
